@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}Submit Solution - Code Practice Platform{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 1rem;">
+    <a href="/problem/{{ problem.id }}" style="color: #666; text-decoration: none;">← Back to Problem</a>
+</div>
+
+<h1 style="margin-bottom: 1.5rem; color: #333;">Submit Solution: {{ problem.title }}</h1>
+
+<form method="POST" style="margin-top: 2rem;">
+    <div style="margin-bottom: 1.5rem;">
+        <label for="language" style="display: block; margin-bottom: 0.5rem; font-weight: bold; color: #333;">
+            Programming Language:
+        </label>
+        <select name="language" id="language" required 
+                style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px; font-size: 1rem;">
+            <option value="Python">Python</option>
+            <option value="Java">Java</option>
+            <option value="C++">C++</option>
+            <option value="JavaScript">JavaScript</option>
+        </select>
+    </div>
+    
+    <div style="margin-bottom: 1.5rem;">
+        <label for="code" style="display: block; margin-bottom: 0.5rem; font-weight: bold; color: #333;">
+            Your Code:
+        </label>
+        <textarea name="code" id="code" required
+                  style="width: 100%; min-height: 400px; padding: 1rem; border: 1px solid #ddd; 
+                         border-radius: 4px; font-family: 'Courier New', monospace; font-size: 0.95rem;"
+                  placeholder="Write your solution here..."></textarea>
+    </div>
+    
+    <div style="display: flex; gap: 1rem;">
+        <button type="submit" class="btn" style="font-size: 1rem; padding: 0.75rem 1.5rem;">
+            Submit Solution
+        </button>
+        <a href="/problem/{{ problem.id }}" class="btn btn-secondary" style="font-size: 1rem; padding: 0.75rem 1.5rem;">
+            Cancel
+        </a>
+    </div>
+</form>
+{% endblock %}

@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}All Submissions - Code Practice Platform{% endblock %}
+
+{% block content %}
+<h1 style="margin-bottom: 1.5rem; color: #333;">All Submissions</h1>
+
+<div style="margin-bottom: 1rem;">
+    <p style="color: #666;">Total Submissions: {{ submissions|length }}</p>
+</div>
+
+<table style="width: 100%; border-collapse: collapse;">
+    <thead>
+        <tr style="background-color: #f2f2f2; text-align: left;">
+            <th style="padding: 1rem; border-bottom: 2px solid #ddd; width: 8%;">ID</th>
+            <th style="padding: 1rem; border-bottom: 2px solid #ddd; width: 30%;">Problem</th>
+            <th style="padding: 1rem; border-bottom: 2px solid #ddd; width: 15%;">Language</th>
+            <th style="padding: 1rem; border-bottom: 2px solid #ddd; width: 15%;">Status</th>
+            <th style="padding: 1rem; border-bottom: 2px solid #ddd; width: 20%;">Submitted At</th>
+            <th style="padding: 1rem; border-bottom: 2px solid #ddd; width: 12%;">Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for submission in submissions %}
+        <tr style="border-bottom: 1px solid #ddd;">
+            <td style="padding: 1rem;">{{ submission.id }}</td>
+            <td style="padding: 1rem;">
+                <a href="/problem/{{ submission.problem_id }}" style="color: #4CAF50; text-decoration: none;">
+                    {{ submission.title }}
+                </a>
+            </td>
+            <td style="padding: 1rem;">{{ submission.language }}</td>
+            <td style="padding: 1rem;">
+                <span style="padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.85rem;
+                    {% if submission.status == 'Accepted' %}background-color: #d4edda; color: #155724;
+                    {% elif submission.status == 'Pending' %}background-color: #d1ecf1; color: #0c5460;
+                    {% else %}background-color: #f8d7da; color: #721c24;{% endif %}">
+                    {{ submission.status }}
+                </span>
+            </td>
+            <td style="padding: 1rem;">{{ submission.submitted_at }}</td>
+            <td style="padding: 1rem;">
+                <a href="/submission/{{ submission.id }}" class="btn" style="padding: 0.4rem 0.8rem; font-size: 0.9rem;">View</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

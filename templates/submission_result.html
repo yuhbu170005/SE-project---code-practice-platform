@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block title %}Submission Result - Code Practice Platform{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 1rem;">
+    <a href="/submissions" style="color: #666; text-decoration: none;">← Back to Submissions</a>
+</div>
+
+<h1 style="margin-bottom: 1.5rem; color: #333;">Submission Result</h1>
+
+<div style="background-color: #f9f9f9; padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem;">
+    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem;">
+        <div>
+            <h3 style="color: #666; font-size: 0.9rem; margin-bottom: 0.5rem;">Submission ID</h3>
+            <p style="font-size: 1.1rem; color: #333;">{{ submission.id }}</p>
+        </div>
+        <div>
+            <h3 style="color: #666; font-size: 0.9rem; margin-bottom: 0.5rem;">Problem</h3>
+            <p style="font-size: 1.1rem;">
+                <a href="/problem/{{ submission.problem_id }}" style="color: #4CAF50; text-decoration: none;">
+                    {{ submission.title }}
+                </a>
+            </p>
+        </div>
+        <div>
+            <h3 style="color: #666; font-size: 0.9rem; margin-bottom: 0.5rem;">Language</h3>
+            <p style="font-size: 1.1rem; color: #333;">{{ submission.language }}</p>
+        </div>
+        <div>
+            <h3 style="color: #666; font-size: 0.9rem; margin-bottom: 0.5rem;">Status</h3>
+            <p>
+                <span style="padding: 0.4rem 1rem; border-radius: 12px; font-size: 1rem;
+                    {% if submission.status == 'Accepted' %}background-color: #d4edda; color: #155724;
+                    {% elif submission.status == 'Pending' %}background-color: #d1ecf1; color: #0c5460;
+                    {% else %}background-color: #f8d7da; color: #721c24;{% endif %}">
+                    {{ submission.status }}
+                </span>
+            </p>
+        </div>
+        <div style="grid-column: span 2;">
+            <h3 style="color: #666; font-size: 0.9rem; margin-bottom: 0.5rem;">Submitted At</h3>
+            <p style="font-size: 1.1rem; color: #333;">{{ submission.submitted_at }}</p>
+        </div>
+    </div>
+</div>
+
+<div style="margin-bottom: 2rem;">
+    <h2 style="color: #333; margin-bottom: 1rem;">Submitted Code</h2>
+    <pre style="background-color: #f5f5f5; padding: 1.5rem; border-radius: 8px; overflow-x: auto; 
+                border: 1px solid #ddd; font-family: 'Courier New', monospace; font-size: 0.95rem;">{{ submission.code }}</pre>
+</div>
+
+<div style="display: flex; gap: 1rem; margin-top: 2rem;">
+    <a href="/submit/{{ submission.problem_id }}" class="btn" style="font-size: 1rem; padding: 0.75rem 1.5rem;">
+        Submit Again
+    </a>
+    <a href="/problem/{{ submission.problem_id }}" class="btn btn-secondary" style="font-size: 1rem; padding: 0.75rem 1.5rem;">
+        View Problem
+    </a>
+</div>
+{% endblock %}
