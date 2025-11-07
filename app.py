@@ -169,4 +169,6 @@ if __name__ == '__main__':
     if not os.path.exists(app.config['DATABASE']):
         init_db()
     
+    # NOTE: Debug mode is enabled for development purposes only.
+    # In production, set debug=False and use a production WSGI server like gunicorn
     app.run(debug=True, host='0.0.0.0', port=5000)
