@@ -67,4 +67,4 @@ This is a basic prototype for educational purposes. For production use:
 - Use a production WSGI server (e.g., gunicorn)
 - Implement actual code execution and testing
 - Add user authentication
-- Use a production database (PostgreSQL, MySQL)
+- Use a production database (PostgreSQL, MySQL) or SQLite
