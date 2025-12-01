@@ -1,174 +1,254 @@
-from flask import Flask, render_template, request, redirect, url_for
-import sqlite3
+from flask import Flask, render_template, request, redirect, url_for, jsonify
+from flask_cors import CORS
+import mysql.connector
+from mysql.connector import Error
 import os
-from datetime import datetime
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = Flask(__name__)
-app.config['DATABASE'] = 'coding_platform.db'
+CORS(app)
+
+db_config = {
+    'host': os.getenv('DB_HOST', 'localhost'),
+    'user': os.getenv('DB_USER', 'root'),
+    'password': os.getenv('DB_PASSWORD', 'admin'),
+    'database': os.getenv('DB_NAME', 'coding_practice_system'),
+    'port': int(os.getenv('DB_PORT', 3306))
+}
 
 def get_db_connection():
-    """Get a database connection."""
-    conn = sqlite3.connect(app.config['DATABASE'])
-    conn.row_factory = sqlite3.Row
-    return conn
+    """Tạo kết nối đến MySQL"""
+    try:
+        conn = mysql.connector.connect(**db_config)
+        return conn
+    except Error as e:
+        print(f"Lỗi kết nối database: {e}")
+        return None
 
-def init_db():
-    """Initialize the database with schema and dummy data."""
-    conn = get_db_connection()
-    
-    # Create problems table
-    conn.execute('''
-        CREATE TABLE IF NOT EXISTS problems (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            title TEXT NOT NULL,
-            description TEXT NOT NULL,
-            difficulty TEXT NOT NULL,
-            examples TEXT
-        )
-    ''')
-    
-    # Create submissions table
-    conn.execute('''
-        CREATE TABLE IF NOT EXISTS submissions (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            problem_id INTEGER NOT NULL,
-            code TEXT NOT NULL,
-            language TEXT NOT NULL,
-            status TEXT NOT NULL,
-            submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (problem_id) REFERENCES problems (id)
-        )
-    ''')
-    
-    # Check if we need to add dummy data
-    cursor = conn.execute('SELECT COUNT(*) FROM problems')
-    count = cursor.fetchone()[0]
-    
-    if count == 0:
-        # Insert dummy problems
-        problems = [
-            ('Two Sum', 
-             'Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.',
-             'Easy',
-             'Example 1: Input: nums = [2,7,11,15], target = 9\nOutput: [0,1]'),
-            ('Reverse String',
-             'Write a function that reverses a string. The input string is given as an array of characters.',
-             'Easy',
-             'Example 1: Input: s = ["h","e","l","l","o"]\nOutput: ["o","l","l","e","h"]'),
-            ('Binary Search',
-             'Given an array of integers nums which is sorted in ascending order, and an integer target, write a function to search target in nums.',
-             'Medium',
-             'Example 1: Input: nums = [-1,0,3,5,9,12], target = 9\nOutput: 4'),
-            ('Valid Parentheses',
-             'Given a string s containing just the characters "(", ")", "{", "}", "[" and "]", determine if the input string is valid.',
-             'Medium',
-             'Example 1: Input: s = "()"\nOutput: true'),
-            ('Merge Two Sorted Lists',
-             'You are given the heads of two sorted linked lists list1 and list2. Merge the two lists into one sorted list.',
-             'Hard',
-             'Example 1: Input: list1 = [1,2,4], list2 = [1,3,4]\nOutput: [1,1,2,3,4,4]')
-        ]
-        
-        conn.executemany('INSERT INTO problems (title, description, difficulty, examples) VALUES (?, ?, ?, ?)', problems)
-        
-        # Insert some dummy submissions
-        submissions = [
-            (1, 'def twoSum(nums, target):\n    for i in range(len(nums)):\n        for j in range(i+1, len(nums)):\n            if nums[i] + nums[j] == target:\n                return [i, j]', 'Python', 'Accepted'),
-            (2, 'def reverseString(s):\n    s.reverse()\n    return s', 'Python', 'Accepted'),
-            (3, 'def search(nums, target):\n    left, right = 0, len(nums) - 1\n    while left <= right:\n        mid = (left + right) // 2\n        if nums[mid] == target:\n            return mid\n        elif nums[mid] < target:\n            left = mid + 1\n        else:\n            right = mid - 1\n    return -1', 'Python', 'Accepted'),
-            (1, 'def twoSum(nums, target):\n    return [0, 1]', 'Python', 'Wrong Answer')
-        ]
-        
-        conn.executemany('INSERT INTO submissions (problem_id, code, language, status) VALUES (?, ?, ?, ?)', submissions)
-    
-    conn.commit()
-    conn.close()
+# ==================== ROUTES ====================
 
 @app.route('/')
-def home():
-    """Home page route."""
-    return render_template('home.html')
-
-@app.route('/problems')
-def problems():
-    """Problem list page route."""
+def index():
+    """Hiển thị danh sách tất cả problems"""
     conn = get_db_connection()
-    problems = conn.execute('SELECT * FROM problems ORDER BY id').fetchall()
+    if not conn:
+        return render_template('index.html', problems=[], error="Không thể kết nối database")
+    
+    cursor = conn.cursor(dictionary=True)
+    
+    difficulty = request.args.get('difficulty', '')
+    tag = request.args.get('tag', '')
+    search = request.args.get('search', '')
+    
+    # Xây dựng query với filter
+    query = """
+        SELECT p.*, GROUP_CONCAT(t.tag_name) as tags
+        FROM problems p
+        LEFT JOIN problem_tags pt ON p.problem_id = pt.problem_id
+        LEFT JOIN tags t ON pt.tag_id = t.tag_id
+        WHERE 1=1
+    """
+    params = []
+    
+    if difficulty:
+        query += " AND p.difficulty = %s"
+        params.append(difficulty)
+    
+    if tag:
+        query += " AND t.tag_name = %s"
+        params.append(tag)
+    
+    if search:
+        query += " AND (p.title LIKE %s OR p.description LIKE %s)"
+        search_param = f"%{search}%"
+        params.extend([search_param, search_param])
+    
+    query += " GROUP BY p.problem_id ORDER BY p.problem_id DESC"
+    
+    cursor.execute(query, params)
+    problems = cursor.fetchall()
+    
+    # Get all tags for filter dropdown
+    cursor.execute("SELECT DISTINCT tag_name FROM tags ORDER BY tag_name")
+    all_tags = [row['tag_name'] for row in cursor.fetchall()]
+    
+    cursor.close()
     conn.close()
-    return render_template('problems.html', problems=problems)
+    
+    return render_template('index.html', problems=problems, all_tags=all_tags,
+                         difficulty=difficulty, tag=tag, search=search)
 
-@app.route('/problem/<int:problem_id>')
-def problem_detail(problem_id):
-    """Problem detail page route."""
+@app.route('/create', methods=['GET', 'POST'])
+def create():
+    """Tạo problem mới"""
+    if request.method == 'POST':
+        title = request.form.get('title')
+        slug = request.form.get('slug')
+        description = request.form.get('description')
+        difficulty = request.form.get('difficulty')
+        time_limit = request.form.get('time_limit', 1000)
+        memory_limit = request.form.get('memory_limit', 256)
+        tags = request.form.getlist('tags')
+        
+        conn = get_db_connection()
+        if not conn:
+            return render_template('create.html', error="Không thể kết nối database"), 500
+        
+        cursor = conn.cursor()
+        try:
+            query = """INSERT INTO problems (title, slug, description, difficulty, time_limit, memory_limit) 
+                      VALUES (%s, %s, %s, %s, %s, %s)"""
+            cursor.execute(query, (title, slug, description, difficulty, time_limit, memory_limit))
+            problem_id = cursor.lastrowid
+            
+            for tag_id in tags:
+                cursor.execute("INSERT INTO problem_tags (problem_id, tag_id) VALUES (%s, %s)",
+                             (problem_id, tag_id))
+            
+            conn.commit()
+            cursor.close()
+            conn.close()
+            return redirect(url_for('index'))
+        except Error as e:
+            cursor.close()
+            conn.close()
+            return render_template('create.html', error=f"Lỗi: {e}"), 500
+    
+    # Get all tags for selection
     conn = get_db_connection()
-    problem = conn.execute('SELECT * FROM problems WHERE id = ?', (problem_id,)).fetchone()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("SELECT tag_id, tag_name FROM tags ORDER BY tag_name")
+    tags = cursor.fetchall()
+    cursor.close()
     conn.close()
-    if problem is None:
-        return "Problem not found", 404
-    return render_template('problem_detail.html', problem=problem)
+    
+    return render_template('create.html', tags=tags)
 
-@app.route('/submit/<int:problem_id>', methods=['GET', 'POST'])
-def submit(problem_id):
-    """Submit code page route."""
+@app.route('/edit/<int:id>', methods=['GET', 'POST'])
+def edit(id):
+    """Chỉnh sửa problem"""
     conn = get_db_connection()
-    problem = conn.execute('SELECT * FROM problems WHERE id = ?', (problem_id,)).fetchone()
+    if not conn:
+        return render_template('edit.html', error="Không thể kết nối database"), 500
+    
+    cursor = conn.cursor(dictionary=True)
     
     if request.method == 'POST':
-        code = request.form['code']
-        language = request.form['language']
+        title = request.form.get('title')
+        slug = request.form.get('slug')
+        description = request.form.get('description')
+        difficulty = request.form.get('difficulty')
+        time_limit = request.form.get('time_limit', 1000)
+        memory_limit = request.form.get('memory_limit', 256)
+        tags = request.form.getlist('tags')
         
-        # Simulate evaluation - in a real system, this would run the code
-        # For now, we'll just mark it as "Pending"
-        status = 'Pending'
-        
-        conn.execute('INSERT INTO submissions (problem_id, code, language, status) VALUES (?, ?, ?, ?)',
-                    (problem_id, code, language, status))
+        try:
+            query = """UPDATE problems SET title=%s, slug=%s, description=%s, 
+                      difficulty=%s, time_limit=%s, memory_limit=%s WHERE problem_id=%s"""
+            cursor.execute(query, (title, slug, description, difficulty, 
+                                 time_limit, memory_limit, id))
+            
+            cursor.execute("DELETE FROM problem_tags WHERE problem_id=%s", (id,))
+            for tag_id in tags:
+                cursor.execute("INSERT INTO problem_tags (problem_id, tag_id) VALUES (%s, %s)",
+                             (id, tag_id))
+            
+            conn.commit()
+            cursor.close()
+            conn.close()
+            return redirect(url_for('index'))
+        except Error as e:
+            cursor.close()
+            conn.close()
+            return render_template('edit.html', error=f"Lỗi: {e}"), 500
+    
+    # GET request - lấy problem để hiển thị
+    cursor.execute("""
+        SELECT p.*, GROUP_CONCAT(pt.tag_id) as tag_ids
+        FROM problems p
+        LEFT JOIN problem_tags pt ON p.problem_id = pt.problem_id
+        WHERE p.problem_id = %s
+        GROUP BY p.problem_id
+    """, (id,))
+    problem = cursor.fetchone()
+    
+    # Get all tags
+    cursor.execute("SELECT tag_id, tag_name FROM tags ORDER BY tag_name")
+    tags = cursor.fetchall()
+    
+    cursor.close()
+    conn.close()
+    
+    if not problem:
+        return redirect(url_for('index'))
+    
+    # Parse selected tags
+    selected_tags = problem['tag_ids'].split(',') if problem['tag_ids'] else []
+    
+    return render_template('edit.html', problem=problem, tags=tags, selected_tags=selected_tags)
+
+@app.route('/delete/<int:id>', methods=['POST'])
+def delete(id):
+    """Xóa problem"""
+    conn = get_db_connection()
+    if not conn:
+        return redirect(url_for('index'))
+    
+    cursor = conn.cursor()
+    try:
+        cursor.execute("DELETE FROM problems WHERE problem_id = %s", (id,))
         conn.commit()
-        
-        # Get the submission ID
-        submission_id = conn.execute('SELECT last_insert_rowid()').fetchone()[0]
+    except Error as e:
+        print(f"Lỗi xóa: {e}")
+    finally:
+        cursor.close()
         conn.close()
-        
-        return redirect(url_for('submission_result', submission_id=submission_id))
     
-    conn.close()
-    return render_template('submit.html', problem=problem)
+    return redirect(url_for('index'))
 
-@app.route('/submissions')
-def submissions():
-    """View all submissions route."""
+@app.route('/api/problems', methods=['GET'])
+def api_problems():
+    """API lấy danh sách problems (JSON)"""
     conn = get_db_connection()
-    submissions = conn.execute('''
-        SELECT s.*, p.title 
-        FROM submissions s
-        JOIN problems p ON s.problem_id = p.id
-        ORDER BY s.submitted_at DESC
-    ''').fetchall()
-    conn.close()
-    return render_template('submissions.html', submissions=submissions)
-
-@app.route('/submission/<int:submission_id>')
-def submission_result(submission_id):
-    """View submission result route."""
-    conn = get_db_connection()
-    submission = conn.execute('''
-        SELECT s.*, p.title, p.description
-        FROM submissions s
-        JOIN problems p ON s.problem_id = p.id
-        WHERE s.id = ?
-    ''', (submission_id,)).fetchone()
+    if not conn:
+        return jsonify({'error': 'Database connection failed'}), 500
+    
+    cursor = conn.cursor(dictionary=True)
+    
+    difficulty = request.args.get('difficulty', '')
+    tag = request.args.get('tag', '')
+    search = request.args.get('search', '')
+    
+    query = """
+        SELECT p.*, GROUP_CONCAT(t.tag_name) as tags
+        FROM problems p
+        LEFT JOIN problem_tags pt ON p.problem_id = pt.problem_id
+        LEFT JOIN tags t ON pt.tag_id = t.tag_id
+        WHERE 1=1
+    """
+    params = []
+    
+    if difficulty:
+        query += " AND p.difficulty = %s"
+        params.append(difficulty)
+    if tag:
+        query += " AND t.tag_name = %s"
+        params.append(tag)
+    if search:
+        query += " AND (p.title LIKE %s OR p.description LIKE %s)"
+        search_param = f"%{search}%"
+        params.extend([search_param, search_param])
+    
+    query += " GROUP BY p.problem_id"
+    
+    cursor.execute(query, params)
+    problems = cursor.fetchall()
+    cursor.close()
     conn.close()
     
-    if submission is None:
-        return "Submission not found", 404
-    
-    return render_template('submission_result.html', submission=submission)
+    return jsonify(problems)
 
 if __name__ == '__main__':
-    # Initialize database
-    if not os.path.exists(app.config['DATABASE']):
-        init_db()
-    
-    # NOTE: Debug mode is enabled for development purposes only.
-    # In production, set debug=False and use a production WSGI server like gunicorn
     app.run(debug=True, host='0.0.0.0', port=5000)

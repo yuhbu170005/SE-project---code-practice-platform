@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block title %}Danh sách bài tập - LeetCode System{% endblock %}
+
+{% block content %}
+<div class="page">
+    <h1>Danh sách bài tập</h1>
+
+    <!-- Filter Section -->
+    <div class="filter-section">
+        <form method="get" class="filter-form">
+            <input type="text" name="search" placeholder="Tìm kiếm bài tập..." 
+                   value="{{ search }}" class="search-input">
+            
+            <!-- Updated filter to use difficulty field -->
+            <select name="difficulty" class="filter-select">
+                <option value="">Tất cả độ khó</option>
+                <option value="Easy" {% if difficulty == 'Easy' %}selected{% endif %}>Easy</option>
+                <option value="Medium" {% if difficulty == 'Medium' %}selected{% endif %}>Medium</option>
+                <option value="Hard" {% if difficulty == 'Hard' %}selected{% endif %}>Hard</option>
+            </select>
+
+            <!-- Updated filter to use tags instead of category -->
+            <select name="tag" class="filter-select">
+                <option value="">Tất cả Tags</option>
+                {% for tag in all_tags %}
+                <option value="{{ tag }}" {% if tag == tag %}selected{% endif %}>{{ tag }}</option>
+                {% endfor %}
+            </select>
+
+            <button type="submit" class="btn-filter">Lọc</button>
+            <a href="/" class="btn-clear">Xóa bộ lọc</a>
+        </form>
+    </div>
+
+    <!-- Problems Table -->
+    {% if problems %}
+    <div class="results-count">Tìm thấy {{ problems|length }} bài tập</div>
+    
+    <table class="problems-table">
+        <thead>
+            <tr>
+                <th>Tiêu đề</th>
+                <th>Độ khó</th>
+                <th>Tags</th>
+                <th>Time Limit (ms)</th>
+                <th>Memory Limit (MB)</th>
+                <th>Hành động</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for problem in problems %}
+            <tr>
+                <td>{{ problem.title }}</td>
+                <td><span class="difficulty difficulty-{{ problem.difficulty|lower }}">{{ problem.difficulty }}</span></td>
+                <td>
+                    {% if problem.tags %}
+                        {% for tag in problem.tags.split(',') %}
+                        <span class="tag-badge">{{ tag }}</span>
+                        {% endfor %}
+                    {% else %}
+                        <span class="tag-badge">-</span>
+                    {% endif %}
+                </td>
+                <td>{{ problem.time_limit }}</td>
+                <td>{{ problem.memory_limit }}</td>
+                <td class="actions">
+                    <a href="/edit/{{ problem.problem_id }}" class="btn-edit">Sửa</a>
+                    <form method="post" action="/delete/{{ problem.problem_id }}" style="display:inline;">
+                        <button type="submit" class="btn-delete" onclick="return confirm('Bạn có chắc muốn xóa?')">Xóa</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="no-results">
+        <p>Không tìm thấy bài tập nào</p>
+    </div>
+    {% endif %}
+
+    {% if error %}
+    <div class="alert alert-error">{{ error }}</div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block title %}Chỉnh sửa bài tập - LeetCode System{% endblock %}
+
+{% block content %}
+<div class="page">
+    <h1>Chỉnh sửa bài tập</h1>
+
+    {% if error %}
+    <div class="alert alert-error">{{ error }}</div>
+    {% endif %}
+
+    <form method="post" class="problem-form">
+        <div class="form-group">
+            <label for="title">Tiêu đề *</label>
+            <input type="text" id="title" name="title" value="{{ problem.title }}" required>
+        </div>
+
+        <!-- Added slug field -->
+        <div class="form-group">
+            <label for="slug">Slug (URL friendly) *</label>
+            <input type="text" id="slug" name="slug" value="{{ problem.slug }}" required>
+        </div>
+
+        <div class="form-group">
+            <label for="description">Mô tả *</label>
+            <textarea id="description" name="description" rows="6" required>{{ problem.description }}</textarea>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="difficulty">Độ khó *</label>
+                <select id="difficulty" name="difficulty" required>
+                    <option value="Easy" {% if problem.difficulty == 'Easy' %}selected{% endif %}>Easy</option>
+                    <option value="Medium" {% if problem.difficulty == 'Medium' %}selected{% endif %}>Medium</option>
+                    <option value="Hard" {% if problem.difficulty == 'Hard' %}selected{% endif %}>Hard</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="category">Danh mục *</label>
+                <select id="category" name="category" required>
+                    <option value="Array" {% if problem.category == 'Array' %}selected{% endif %}>Array</option>
+                    <option value="String" {% if problem.category == 'String' %}selected{% endif %}>String</option>
+                    <option value="Math" {% if problem.category == 'Math' %}selected{% endif %}>Math</option>
+                    <option value="DynamicProgramming" {% if problem.category == 'DynamicProgramming' %}selected{% endif %}>Dynamic Programming</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="status">Trạng thái</label>
+                <select id="status" name="status">
+                    <option value="To Do" {% if problem.status == 'To Do' %}selected{% endif %}>To Do</option>
+                    <option value="In Progress" {% if problem.status == 'In Progress' %}selected{% endif %}>In Progress</option>
+                    <option value="Completed" {% if problem.status == 'Completed' %}selected{% endif %}>Completed</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="acceptance_rate">Acceptance Rate (%)</label>
+                <input type="number" id="acceptance_rate" name="acceptance_rate" min="0" max="100" value="{{ problem.acceptance_rate }}">
+            </div>
+
+            <div class="form-group">
+                <label for="submissions">Submissions</label>
+                <input type="number" id="submissions" name="submissions" min="0" value="{{ problem.submissions }}">
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="time_limit">Time Limit (ms)</label>
+                <input type="number" id="time_limit" name="time_limit" value="{{ problem.time_limit }}" min="0">
+            </div>
+
+            <div class="form-group">
+                <label for="memory_limit">Memory Limit (MB)</label>
+                <input type="number" id="memory_limit" name="memory_limit" value="{{ problem.memory_limit }}" min="0">
+            </div>
+        </div>
+
+        <!-- Added tags multi-select for editing -->
+        <div class="form-group">
+            <label for="tags">Tags</label>
+            <div class="tags-checkbox">
+                {% for tag in tags %}
+                <label class="checkbox-label">
+                    <input type="checkbox" name="tags" value="{{ tag.tag_id }}" 
+                           {% if tag.tag_id|string in selected_tags %}checked{% endif %}>
+                    {{ tag.tag_name }}
+                </label>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn-submit">Cập nhật</button>
+            <a href="/" class="btn-cancel">Hủy</a>
+        </div>
+    </form>
+</div>
+{% endblock %}
