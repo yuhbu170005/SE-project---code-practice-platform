@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block content %}
+{% if error %}<div class="alert alert-error">Error: {{ error }}</div>{% endif %}
+<p>Total: {{ problems|length if problems is defined else 0 }}</p>
+<ul>
+{% for item in problems %}
+    <li>
+        #{{ item.problem_id }} {{ item.title }} ({{ item.difficulty }}) slug={{ item.slug }}
+        {% if item.tags %} | Tags: {{ item.tags|join(", ") }}{% endif %}
+    </li>
+{% endfor %}
+</ul>
+{% endblock %}

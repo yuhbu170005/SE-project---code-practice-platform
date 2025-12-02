@@ -1,9 +1,9 @@
-<!DOCTYPE html>
-<html lang="vi">
+<!doctype html>
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
+    <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}LeetCode System{% endblock %}</title>
+    <title>{{ title or "LeetCode System" }}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
@@ -13,13 +13,17 @@
                 <a href="/">LeetCode System</a>
             </div>
             <ul class="nav-links">
-                <li><a href="/">Danh sách bài tập</a></li>
-                <li><a href="/create" class="btn-create">+ Thêm bài tập</a></li>
+                <li><a href="/">Problems</a></li>
+                <li><a href="/create" class="btn-create">+ Create Problem</a></li>
+                <li><a href="/auth/register" class="btn-register">Register</a></li>
+                <li><a href="/auth/login" class="btn-login">Login</a></li>
             </ul>
         </div>
     </nav>
 
     <div class="container">
+        {% if header_title %}<h1>{{ header_title }}</h1>{% endif %}
+        {% if header_subtitle %}<p class="subtitle">{{ header_subtitle }}</p>{% endif %}
         {% block content %}{% endblock %}
     </div>
 

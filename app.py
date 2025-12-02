@@ -1,31 +1,19 @@
 from flask import Flask, render_template, request, redirect, url_for, jsonify
 from flask_cors import CORS
-import mysql.connector
 from mysql.connector import Error
-import os
 from dotenv import load_dotenv
+from backend.database import get_db_connection
+from backend.routes import auth_bp, problem_bp, user_bp
 
 load_dotenv()
 
 app = Flask(__name__)
 CORS(app)
 
-db_config = {
-    'host': os.getenv('DB_HOST', 'localhost'),
-    'user': os.getenv('DB_USER', 'root'),
-    'password': os.getenv('DB_PASSWORD', ''),
-    'database': os.getenv('DB_NAME', 'coding_practice_system'),
-    'port': int(os.getenv('DB_PORT', 3306))
-}
-
-def get_db_connection():
-    """Tạo kết nối đến MySQL"""
-    try:
-        conn = mysql.connector.connect(**db_config)
-        return conn
-    except Error as e:
-        print(f"Lỗi kết nối database: {e}")
-        return None
+# Register blueprints
+app.register_blueprint(auth_bp)
+app.register_blueprint(problem_bp)
+app.register_blueprint(user_bp)
 
 # ==================== ROUTES ====================
 

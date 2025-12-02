@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block content %}
+{% if error %}<div class="alert alert-error">Error: {{ error }}</div>{% endif %}
+<p>Total: {{ count or 0 }}</p>
+{% if submissions %}
+<table border="1" cellspacing="0" cellpadding="4">
+    <tr>
+        <th>ID</th><th>Problem</th><th>Lang</th><th>Status</th><th>Time</th><th>Memory</th><th>Tests</th><th>Submitted at</th>
+    </tr>
+    {% for s in submissions %}
+    <tr>
+        <td>{{ s.submission_id }}</td>
+        <td>{{ s.problem_title }} (#{{ s.problem_id }})</td>
+        <td>{{ s.language }}</td>
+        <td>{{ s.status }}</td>
+        <td>{{ s.execution_time }}</td>
+        <td>{{ s.memory_used }}</td>
+        <td>{{ s.test_cases_passed }}/{{ s.total_test_cases }}</td>
+        <td>{{ s.submitted_at }}</td>
+    </tr>
+    {% endfor %}
+</table>
+{% else %}
+<p>No submissions.</p>
+{% endif %}
+{% endblock %}
