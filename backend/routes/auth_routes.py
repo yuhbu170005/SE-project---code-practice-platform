@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify, render_template
+from flask import Blueprint, request, jsonify, render_template, redirect, url_for, flash
 from werkzeug.security import generate_password_hash, check_password_hash
 from mysql.connector import Error
 
@@ -125,11 +125,11 @@ def register():
         }
 
         if wants_html:
-            return render_register_page(
-                message="Registration successful.",
-                user=user_payload,
-                status_code=201,
-            )
+            # Đăng ký thành công (giao diện web):
+            # - Hiển thị thông báo nhỏ
+            # - Điều hướng sang trang login
+            flash("Registration successful! Please login.", "success")
+            return redirect(url_for("auth.login"))
 
         return jsonify({
             "success": True,
@@ -230,11 +230,11 @@ def login():
         }
 
         if wants_html:
-            return render_login_page(
-                message="Login successful.",
-                user=user_data,
-                status_code=200,
-            )
+            # Đăng nhập thành công (giao diện web):
+            # - Hiển thị thông báo nhỏ
+            # - Điều hướng sang trang problems
+            flash("Login successful!", "success")
+            return redirect("/problems")
 
         return jsonify({
             "success": True,

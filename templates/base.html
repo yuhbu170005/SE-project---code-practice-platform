@@ -13,22 +13,46 @@
                 <a href="/">LeetCode System</a>
             </div>
             <ul class="nav-links">
-                <li><a href="/">Problems</a></li>
-                <li><a href="/create" class="btn-create">+ Create Problem</a></li>
-                <li><a href="/auth/register" class="btn-register">Register</a></li>
+                <li><a href="/problems">Problems</a></li>
+                <!-- <li><a href="/create" class="btn-create">+ Create Problem</a></li> -->
                 <li><a href="/auth/login" class="btn-login">Login</a></li>
+                <li><a href="/auth/register" class="btn-register">Sign Up</a></li>
             </ul>
         </div>
     </nav>
 
-    <div class="container">
-        {% if header_title %}<h1>{{ header_title }}</h1>{% endif %}
-        {% if header_subtitle %}<p class="subtitle">{{ header_subtitle }}</p>{% endif %}
-        {% block content %}{% endblock %}
+    <div class="toast-container">
+        {% with messages = get_flashed_messages(with_categories=True) %}
+            {% if messages %}
+                {% for category, msg in messages %}
+                    <div class="toast toast-{{ category }}">{{ msg }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
     </div>
+
+    <main class="main-content">
+        <div class="container">
+            {% if header_title %}<h1>{{ header_title }}</h1>{% endif %}
+            {% if header_subtitle %}<p class="subtitle">{{ header_subtitle }}</p>{% endif %}
+            {% block content %}{% endblock %}
+        </div>
+    </main>
 
     <footer class="footer">
         <p>&copy; 2025 LeetCode System. Built with Flask & MySQL</p>
     </footer>
+    <script>
+        // Tự ẩn toast sau 3 giây
+        window.addEventListener('DOMContentLoaded', function () {
+            const toasts = document.querySelectorAll('.toast');
+            if (!toasts.length) return;
+            setTimeout(function () {
+                toasts.forEach(function (t) {
+                    t.classList.add('toast-hide');
+                });
+            }, 3000);
+        });
+    </script>
 </body>
 </html>

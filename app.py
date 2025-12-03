@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request, redirect, url_for, jsonify
+import os
 from flask_cors import CORS
 from mysql.connector import Error
 from dotenv import load_dotenv
@@ -8,6 +9,7 @@ from backend.routes import auth_bp, problem_bp, user_bp
 load_dotenv()
 
 app = Flask(__name__)
+app.secret_key = os.getenv("SECRET_KEY", "dev-secret-key")
 CORS(app)
 
 # Register blueprints
@@ -18,6 +20,11 @@ app.register_blueprint(user_bp)
 # ==================== ROUTES ====================
 
 @app.route('/')
+def home():
+    return render_template('home.html')
+
+
+@app.route('/problems')
 def index():
     """Hiển thị danh sách tất cả problems"""
     conn = get_db_connection()

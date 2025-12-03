@@ -4,17 +4,17 @@
 
 {% block content %}
 <div class="page">
-    <h1>Danh sách bài tập</h1>
+    <h1>Problems List</h1>
 
     <!-- Filter Section -->
     <div class="filter-section">
         <form method="get" class="filter-form">
-            <input type="text" name="search" placeholder="Tìm kiếm bài tập..." 
+            <input type="text" name="search" placeholder="Search problems..." 
                    value="{{ search }}" class="search-input">
             
             <!-- Updated filter to use difficulty field -->
             <select name="difficulty" class="filter-select">
-                <option value="">Tất cả độ khó</option>
+                <option value="">All difficulties</option>
                 <option value="Easy" {% if difficulty == 'Easy' %}selected{% endif %}>Easy</option>
                 <option value="Medium" {% if difficulty == 'Medium' %}selected{% endif %}>Medium</option>
                 <option value="Hard" {% if difficulty == 'Hard' %}selected{% endif %}>Hard</option>
@@ -22,30 +22,29 @@
 
             <!-- Updated filter to use tags instead of category -->
             <select name="tag" class="filter-select">
-                <option value="">Tất cả Tags</option>
+                <option value="">All Tags</option>
                 {% for tag in all_tags %}
                 <option value="{{ tag }}" {% if tag == tag %}selected{% endif %}>{{ tag }}</option>
                 {% endfor %}
             </select>
 
-            <button type="submit" class="btn-filter">Lọc</button>
-            <a href="/" class="btn-clear">Xóa bộ lọc</a>
-        </form>
+            <button type="submit" class="btn-filter">Filter</button>
+            <a href="/problems" class="btn-clear">Clear filters</a>
     </div>
 
     <!-- Problems Table -->
     {% if problems %}
-    <div class="results-count">Tìm thấy {{ problems|length }} bài tập</div>
+    <div class="results-count">Found {{ problems|length }} problems</div>
     
     <table class="problems-table">
         <thead>
             <tr>
-                <th>Tiêu đề</th>
-                <th>Độ khó</th>
+                <th>Title</th>
+                <th>Difficulty</th>
                 <th>Tags</th>
                 <th>Time Limit (ms)</th>
                 <th>Memory Limit (MB)</th>
-                <th>Hành động</th>
+                <!-- <th>Hành động</th> -->
             </tr>
         </thead>
         <tbody>
@@ -64,19 +63,21 @@
                 </td>
                 <td>{{ problem.time_limit }}</td>
                 <td>{{ problem.memory_limit }}</td>
+                <!--
                 <td class="actions">
                     <a href="/edit/{{ problem.problem_id }}" class="btn-edit">Sửa</a>
                     <form method="post" action="/delete/{{ problem.problem_id }}" style="display:inline;">
-                        <button type="submit" class="btn-delete" onclick="return confirm('Bạn có chắc muốn xóa?')">Xóa</button>
+                        <button type="submit" class="btn-delete" onclick="return confirm('Are you sure you want to delete?')">Delete</button>
                     </form>
                 </td>
+                -->
             </tr>
             {% endfor %}
         </tbody>
     </table>
     {% else %}
     <div class="no-results">
-        <p>Không tìm thấy bài tập nào</p>
+        <p>No problems found</p>
     </div>
     {% endif %}
 
