@@ -1,0 +1,226 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Problem - LeetCode Clone{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* 1. Layout Center */
+    .edit-container {
+        max-width: 800px; /* Form không nên quá rộng */
+        margin: 40px auto;
+        padding: 0 20px;
+    }
+
+    /* 2. Card Style */
+    .form-card {
+        background: white;
+        padding: 40px;
+        border-radius: 12px;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+    }
+
+    .form-header {
+        margin-bottom: 30px;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 20px;
+    }
+    .form-title {
+        font-size: 24px;
+        font-weight: 700;
+        color: #333;
+    }
+
+    /* 3. Form Elements */
+    .form-group { margin-bottom: 20px; }
+    
+    .form-label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+        color: #555;
+        font-size: 14px;
+    }
+    .text-danger { color: #dc3545; margin-left: 3px; }
+
+    .form-control {
+        width: 100%;
+        padding: 12px 15px;
+        border: 1px solid #d9d9d9;
+        border-radius: 6px;
+        font-size: 15px;
+        transition: border-color 0.2s, box-shadow 0.2s;
+        outline: none;
+    }
+
+    .form-control:focus {
+        border-color: #40a9ff;
+        box-shadow: 0 0 0 3px rgba(24, 144, 255, 0.1);
+    }
+
+    textarea.form-control {
+        resize: vertical; /* Chỉ cho kéo giãn chiều dọc */
+        min-height: 150px;
+        font-family: 'Consolas', 'Monaco', monospace; /* Font code cho mô tả */
+        line-height: 1.6;
+    }
+
+    /* 4. Grid Layout cho các trường ngắn */
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr; /* Chia 2 cột đều nhau */
+        gap: 20px;
+    }
+
+    /* 5. Modern Checkbox Tags */
+    .tags-wrapper {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 10px;
+    }
+    
+    /* Ẩn checkbox thật đi */
+    .tag-checkbox input { display: none; }
+
+    /* Style cho cái nhãn (label) giả làm nút */
+    .tag-label {
+        background: #f5f5f5;
+        color: #666;
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 13px;
+        cursor: pointer;
+        border: 1px solid transparent;
+        transition: all 0.2s;
+        user-select: none;
+    }
+
+    .tag-label:hover { background: #e6e6e6; }
+
+    /* Khi checkbox được check thì đổi màu label */
+    .tag-checkbox input:checked + .tag-label {
+        background: #e6f7ff;
+        color: #007bff;
+        border-color: #1890ff;
+        font-weight: 600;
+    }
+
+    /* 6. Action Buttons */
+    .form-actions {
+        margin-top: 40px;
+        display: flex;
+        gap: 15px;
+        align-items: center;
+    }
+    
+    .btn-submit {
+        background: #28a745;
+        color: white;
+        border: none;
+        padding: 12px 30px;
+        border-radius: 6px;
+        font-weight: 600;
+        cursor: pointer;
+        font-size: 16px;
+        transition: background 0.2s;
+    }
+    .btn-submit:hover { background: #218838; }
+
+    .btn-cancel {
+        color: #666;
+        text-decoration: none;
+        font-weight: 500;
+        padding: 10px 20px;
+    }
+    .btn-cancel:hover { color: #333; text-decoration: underline; }
+
+    /* Alert error */
+    .alert-error {
+        background: #fff1f0;
+        border: 1px solid #ffa39e;
+        color: #cf1322;
+        padding: 15px;
+        border-radius: 6px;
+        margin-bottom: 20px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="edit-container">
+    <div class="form-card">
+        
+        <div class="form-header">
+            <div class="form-title">Edit Problem: {{ problem.problem_id }}</div>
+        </div>
+
+        {% if error %}
+        <div class="alert-error">
+            <i class="fas fa-exclamation-circle"></i> {{ error }}
+        </div>
+        {% endif %}
+
+        <form method="POST" action="{{ url_for('problem.edit', id=problem.problem_id) }}">
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label" for="title">Title <span class="text-danger">*</span></label>
+                    <input type="text" id="title" name="title" class="form-control" value="{{ problem.title }}" required placeholder="Ex: Two Sum">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="slug">Slug <span class="text-danger">*</span></label>
+                    <input type="text" id="slug" name="slug" class="form-control" value="{{ problem.slug }}" required placeholder="Ex: two-sum">
+                </div>
+            </div>
+
+            <div class="form-row" style="grid-template-columns: 1fr 1fr 1fr;">
+                <div class="form-group">
+                    <label class="form-label" for="difficulty">Difficulty <span class="text-danger">*</span></label>
+                    <select id="difficulty" name="difficulty" class="form-control" required>
+                        <option value="Easy" {% if problem.difficulty == 'Easy' %}selected{% endif %}>Easy</option>
+                        <option value="Medium" {% if problem.difficulty == 'Medium' %}selected{% endif %}>Medium</option>
+                        <option value="Hard" {% if problem.difficulty == 'Hard' %}selected{% endif %}>Hard</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="time_limit">Time Limit (ms)</label>
+                    <input type="number" id="time_limit" name="time_limit" class="form-control" value="{{ problem.time_limit }}" min="0">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="memory_limit">Memory (MB)</label>
+                    <input type="number" id="memory_limit" name="memory_limit" class="form-control" value="{{ problem.memory_limit }}" min="0">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Tags</label>
+                <div class="tags-wrapper">
+                    {% for tag in tags %}
+                    <label class="tag-checkbox">
+                        <input type="checkbox" name="tags" value="{{ tag.tag_id }}" 
+                               {% if tag.tag_id|string in selected_tags %}checked{% endif %}>
+                        <span class="tag-label">{{ tag.tag_name }}</span>
+                    </label>
+                    {% endfor %}
+                </div>
+                <div style="margin-top: 8px; font-size: 12px; color: #888;">
+                    * Select applicable topics for this problem.
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="description">Description (Markdown supported) <span class="text-danger">*</span></label>
+                <textarea id="description" name="description" class="form-control" rows="10" required>{{ problem.description }}</textarea>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn-submit">
+                    <i class="fas fa-save"></i> Save Changes
+                </button>
+                <a href="{{ url_for('problem.list_problems') }}" class="btn-cancel">Cancel</a>
+            </div>
+
+        </form>
+    </div>
+</div>
+{% endblock %}

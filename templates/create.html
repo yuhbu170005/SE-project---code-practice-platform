@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}Thêm bài tập - LeetCode System{% endblock %}
+
+{% block content %}
+<div class="page">
+    <h1>Thêm bài tập mới</h1>
+
+    {% if error %}
+    <div class="alert alert-error">{{ error }}</div>
+    {% endif %}
+
+    <form method="post" class="problem-form">
+        <!-- Updated form fields for new schema -->
+        <div class="form-group">
+            <label for="title">Tiêu đề *</label>
+            <input type="text" id="title" name="title" required>
+        </div>
+
+        <div class="form-group">
+            <label for="slug">Slug (URL friendly) *</label>
+            <input type="text" id="slug" name="slug" required placeholder="e.g. two-sum">
+        </div>
+
+        <div class="form-group">
+            <label for="description">Mô tả *</label>
+            <textarea id="description" name="description" rows="6" required></textarea>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="difficulty">Độ khó *</label>
+                <select id="difficulty" name="difficulty" required>
+                    <option value="">Chọn độ khó</option>
+                    <option value="Easy">Easy</option>
+                    <option value="Medium">Medium</option>
+                    <option value="Hard">Hard</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="time_limit">Time Limit (ms)</label>
+                <input type="number" id="time_limit" name="time_limit" value="1000" min="0">
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="memory_limit">Memory Limit (MB)</label>
+                <input type="number" id="memory_limit" name="memory_limit" value="256" min="0">
+            </div>
+        </div>
+
+        <!-- Added tags multi-select -->
+        <div class="form-group">
+            <label for="tags">Tags</label>
+            <div class="tags-checkbox">
+                {% for tag in tags %}
+                <label class="checkbox-label">
+                    <input type="checkbox" name="tags" value="{{ tag.tag_id }}">
+                    {{ tag.tag_name }}
+                </label>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn-submit">Tạo bài tập</button>
+            <a href="/" class="btn-cancel">Hủy</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

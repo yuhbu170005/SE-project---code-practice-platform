@@ -1,36 +1,327 @@
-{% extends "base.html" %}
+{% extends "base.html" %} {% block title %}{{ problem.title }} - Code Practice{%
+endblock %} {% block extra_css %}
+<style>
+  /* --- 1. CẤU TRÚC LAYOUT TOÀN MÀN HÌNH --- */
+  body {
+    overflow: hidden; /* Ẩn thanh cuộn body để layout fix cứng */
+  }
 
-{% block title %}{{ problem.title }} - Code Practice Platform{% endblock %}
+  /* Ẩn Footer chung đi để màn hình làm bài full chiều cao */
+  footer {
+    display: none;
+  }
 
-{% block content %}
-<div style="margin-bottom: 1rem;">
-    <a href="/problems" style="color: #666; text-decoration: none;">← Back to Problems</a>
+  .main-container {
+    display: flex;
+    /* Chiều cao = 100% màn hình - 60px (Chiều cao của Navbar trong base.html) */
+    height: calc(100vh - 60px);
+    background-color: #fff;
+  }
+
+  /* --- 2. CỘT TRÁI: ĐỀ BÀI (Chiếm 4 phần = 40%) --- */
+  .left-panel {
+    flex: 4; /* Tỷ lệ 4 */
+    min-width: 350px;
+    border-right: 1px solid #e0e0e0;
+    display: flex;
+    flex-direction: column;
+    background: white;
+  }
+
+  .problem-content-wrapper {
+    padding: 20px;
+    overflow-y: auto; /* Cho phép cuộn dọc nội dung đề */
+    flex: 1;
+  }
+
+  .problem-title {
+    font-size: 22px;
+    font-weight: 600;
+    margin-bottom: 10px;
+    color: #262626;
+  }
+
+  .problem-meta {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    align-items: center;
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    background: #f5f5f5;
+    color: #666;
+  }
+
+  .diff-Easy {
+    color: #00af9b;
+    background: #e6f7ff;
+  }
+  .diff-Medium {
+    color: #ffb800;
+    background: #fffbe6;
+  }
+  .diff-Hard {
+    color: #ff2d55;
+    background: #fff1f0;
+  }
+
+  .description-text {
+    font-size: 15px;
+    line-height: 1.6;
+    color: #333;
+  }
+
+  /* --- 3. CỘT PHẢI: EDITOR & TESTCASE (Chiếm 6 phần = 60%) --- */
+  .right-panel {
+    flex: 6; /* Tỷ lệ 6 */
+    display: flex;
+    flex-direction: column;
+    background-color: #fff;
+  }
+
+  /* Thanh chọn ngôn ngữ (Nhỏ gọn) */
+  .editor-header {
+    height: 40px;
+    padding: 0 15px;
+    border-bottom: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #fafafa;
+  }
+
+  .lang-select {
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 2px 5px;
+    font-size: 13px;
+    outline: none;
+    background: white;
+  }
+
+  /* Code Area */
+  .code-area {
+    flex: 1; /* Chiếm hết khoảng trống còn lại */
+    width: 100%;
+    border: none;
+    padding: 15px;
+    font-family: "Consolas", "Monaco", monospace;
+    font-size: 14px;
+    line-height: 1.5;
+    resize: none;
+    outline: none;
+    background: #fafafa;
+    color: #333;
+  }
+
+  /* Testcase Area (Cố định chiều cao ở dưới) */
+  .testcase-section {
+    height: 220px;
+    border-top: 1px solid #e0e0e0;
+    display: flex;
+    flex-direction: column;
+    background: white;
+  }
+
+  .testcase-tabs {
+    display: flex;
+    border-bottom: 1px solid #eee;
+    background: #fafafa;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .tabs-left {
+    display: flex;
+  }
+
+  .tab-btn {
+    padding: 8px 20px;
+    border: none;
+    background: transparent;
+    font-size: 13px;
+    color: #666;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+  }
+  .tab-btn.active {
+    color: #333;
+    font-weight: 600;
+    border-bottom: 2px solid #333;
+    background: white;
+  }
+
+  .testcase-body {
+    padding: 15px;
+    flex: 1;
+    overflow-y: auto;
+    font-family: monospace;
+    font-size: 13px;
+  }
+
+  /* Nút bấm Run/Submit nằm gọn ở góc Testcase */
+  .action-buttons {
+    padding-right: 10px;
+    display: flex;
+    gap: 10px;
+  }
+  .btn-action {
+    padding: 5px 15px;
+    border-radius: 4px;
+    border: none;
+    font-size: 12px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  .btn-run {
+    background: #e0e0e0;
+    color: #333;
+  }
+  .btn-submit {
+    background: #28a745;
+    color: white;
+  }
+  #monaco-editor {
+    flex: 1; /* Để nó chiếm hết khoảng trống của cột phải */
+    width: 100%;
+    min-height: 300px; /* Chiều cao tối thiểu */
+  }
+</style>
+{% endblock %} {% block content %}
+
+<div class="main-container">
+  <div class="left-panel">
+    <div class="problem-content-wrapper">
+      <h1 class="problem-title">
+        {{ problem.problem_id }}. {{ problem.title }}
+      </h1>
+
+      <div class="problem-meta">
+        <span class="chip diff-{{ problem.difficulty }}"
+          >{{ problem.difficulty }}</span
+        >
+        {% for tag in problem.tags %}
+        <span class="chip"
+          ><i class="fas fa-tag" style="font-size: 10px; margin-right: 4px"></i>
+          {{ tag }}</span
+        >
+        {% endfor %}
+      </div>
+
+      <hr style="border: 0; border-top: 1px solid #eee; margin-bottom: 20px" />
+
+      <div class="description-text">
+        {{ problem.description | replace('\n', '<br />') | safe }}
+      </div>
+    </div>
+  </div>
+
+  <div class="right-panel">
+    <div class="editor-header">
+      <div style="font-size: 13px; font-weight: bold; color: #666">
+        <i class="fas fa-code"></i> Code
+      </div>
+      <select class="lang-select" id="language">
+        <option value="python">Python 3</option>
+        <option value="java">Java</option>
+        <option value="cpp">C++</option>
+      </select>
+    </div>
+
+    <div id="monaco-editor"></div>
+
+    <div class="testcase-section">
+      <div class="testcase-tabs">
+        <div class="tabs-left">
+          <button class="tab-btn active" onclick="switchTab('case1')">
+            Testcase
+          </button>
+          <button class="tab-btn" onclick="switchTab('result')">
+            Run Result
+          </button>
+        </div>
+
+        <div class="action-buttons">
+          <button class="btn-action btn-run" onclick="runCode()">Run</button>
+          <button class="btn-action btn-submit" onclick="submitCode()">
+            Submit
+          </button>
+        </div>
+      </div>
+
+      <div class="testcase-body" id="tab-content">
+        <strong>Input:</strong> nums = [2,7,11,15], target = 9
+      </div>
+    </div>
+  </div>
 </div>
 
-<h1 style="margin-bottom: 1rem; color: #333;">{{ problem.title }}</h1>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.36.1/min/vs/loader.min.js"></script>
 
-<div style="margin-bottom: 1.5rem;">
-    <span style="padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.9rem;
-        {% if problem.difficulty == 'Easy' %}background-color: #d4edda; color: #155724;
-        {% elif problem.difficulty == 'Medium' %}background-color: #fff3cd; color: #856404;
-        {% else %}background-color: #f8d7da; color: #721c24;{% endif %}">
-        {{ problem.difficulty }}
-    </span>
-</div>
+<script>
+  const problemId = "{{ problem.problem_id }}";
+  let editor; // Biến giữ cái editor
 
-<div style="margin-bottom: 2rem;">
-    <h2 style="color: #333; margin-bottom: 0.5rem;">Description</h2>
-    <p style="color: #666; line-height: 1.8;">{{ problem.description }}</p>
-</div>
+  // 2. Cấu hình & Bật Editor lên
+  require.config({
+    paths: {
+      vs: "https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.36.1/min/vs",
+    },
+  });
 
-{% if problem.examples %}
-<div style="margin-bottom: 2rem; background-color: #f9f9f9; padding: 1.5rem; border-radius: 8px;">
-    <h2 style="color: #333; margin-bottom: 0.5rem;">Examples</h2>
-    <pre style="color: #666; white-space: pre-wrap;">{{ problem.examples }}</pre>
-</div>
-{% endif %}
+  require(["vs/editor/editor.main"], function () {
+    editor = monaco.editor.create(document.getElementById("monaco-editor"), {
+      value:
+        "# Write your solution here\nclass Solution:\n    def solve(self):\n        pass",
+      language: "python", // Mặc định là Python
+      theme: "vs-light", // Giao diện sáng
+      automaticLayout: true,
+      minimap: { enabled: false },
+      fontSize: 14,
+    });
+  });
 
-<div style="margin-top: 2rem;">
-    <a href="/submit/{{ problem.id }}" class="btn" style="font-size: 1.1rem; padding: 0.75rem 1.5rem;">Submit Solution</a>
-</div>
+  // Hàm đổi ngôn ngữ (khi chọn dropdown)
+  function changeLanguage() {
+    const lang = document.getElementById("language").value;
+    let codeMoi = "";
+
+    // Code mẫu cho từng ngôn ngữ
+    if (lang === "python")
+      codeMoi = "# Python Solution\ndef solve():\n    pass";
+    if (lang === "java")
+      codeMoi =
+        "// Java Solution\nclass Solution {\n    public void solve() {}\n}";
+    if (lang === "cpp") codeMoi = "// C++ Solution\nvoid solve() {\n}";
+
+    // Cập nhật ngôn ngữ cho Editor
+    monaco.editor.setModelLanguage(editor.getModel(), lang);
+    editor.setValue(codeMoi);
+  }
+
+  // Hàm lấy code để chạy
+  function runCode() {
+    // QUAN TRỌNG: Lấy code từ Editor bằng lệnh này
+    const code = editor.getValue();
+
+    alert("Đang chạy code:\n" + code);
+    // ... (Logic chạy testcase cũ của bạn) ...
+  }
+
+  function submitCode() {
+    const code = editor.getValue();
+    alert("Đang nộp bài ID: " + problemId);
+    // ... (Logic submit cũ của bạn) ...
+  }
+
+  // ... (Giữ nguyên hàm switchTab cũ) ...
+  function switchTab(tab) {}
+</script>
+
 {% endblock %}

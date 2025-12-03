@@ -1,45 +1,216 @@
 {% extends "base.html" %}
 
-{% block title %}Problems - Code Practice Platform{% endblock %}
+{% block title %}Problem List - LeetCode Clone{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* 1. Layout & Container */
+    .page-container {
+        max-width: 1200px;
+        margin: 40px auto;
+        padding: 0 20px;
+    }
+
+    /* 2. Header Section */
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 25px;
+    }
+    .page-title {
+        font-size: 24px;
+        font-weight: 600;
+        color: #262626;
+    }
+    .btn-create {
+        background-color: #28a745;
+        color: white;
+        padding: 10px 20px;
+        border-radius: 5px;
+        text-decoration: none;
+        font-weight: 500;
+        transition: background 0.2s;
+    }
+    .btn-create:hover { background-color: #218838; }
+
+    /* 3. Filter Box */
+    .filter-card {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        margin-bottom: 25px;
+        display: flex;
+        gap: 15px;
+        flex-wrap: wrap;
+    }
+    .form-control {
+        padding: 10px;
+        border: 1px solid #d9d9d9;
+        border-radius: 4px;
+        font-size: 14px;
+        outline: none;
+    }
+    .form-control:focus { border-color: #40a9ff; }
+    .search-input { flex: 1; min-width: 200px; }
+    .btn-filter {
+        background: #007bff; color: white; border: none;
+        padding: 10px 20px; border-radius: 4px; cursor: pointer;
+    }
+
+    /* 4. Table Design (Giống LeetCode) */
+    .table-container {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        overflow: hidden; /* Bo góc cho table */
+    }
+    .problem-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    .problem-table th {
+        background-color: #fafafa;
+        color: #595959;
+        font-weight: 600;
+        text-align: left;
+        padding: 16px;
+        border-bottom: 1px solid #f0f0f0;
+    }
+    .problem-table td {
+        padding: 16px;
+        border-bottom: 1px solid #f0f0f0;
+        color: #262626;
+    }
+    .problem-table tr:hover {
+        background-color: #f8f9fa; /* Hiệu ứng hover dòng */
+    }
+    .problem-link {
+        color: #262626;
+        text-decoration: none;
+        font-weight: 500;
+        transition: color 0.2s;
+    }
+    .problem-link:hover { color: #007bff; }
+
+    /* 5. Badges (Màu sắc độ khó) */
+    .badge {
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        display: inline-block;
+    }
+    .badge-Easy { background-color: #e6f7ff; color: #00af9b; } /* Xanh LeetCode */
+    .badge-Medium { background-color: #fffbe6; color: #ffb800; } /* Vàng LeetCode */
+    .badge-Hard { background-color: #fff1f0; color: #ff2d55; } /* Đỏ LeetCode */
+
+    .tag-pill {
+        background: #f0f0f0;
+        color: #666;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 11px;
+        margin-right: 4px;
+    }
+    
+    .action-icons a {
+        margin-right: 10px;
+        color: #8c8c8c;
+        transition: color 0.2s;
+    }
+    .action-icons a:hover { color: #333; }
+</style>
+{% endblock %}
 
 {% block content %}
-<h1 style="margin-bottom: 1.5rem; color: #333;">Practice Problems</h1>
+<div class="page-container">
+    
+    <div class="page-header">
+        <div class="page-title">Problem List</div>
+        <a href="{{ url_for('problem.create') }}" class="btn-create">
+            <i class="fas fa-plus"></i> Create Problem
+        </a>
+    </div>
 
-<div style="margin-bottom: 1rem;">
-    <p style="color: #666;">Total Problems: {{ problems|length }}</p>
+    <div class="filter-card">
+        <form action="{{ url_for('problem.list_problems') }}" method="GET" style="display: flex; width: 100%; gap: 10px;">
+            <input type="text" name="search" class="form-control search-input" placeholder="Search questions..." value="{{ search }}">
+            
+            <select name="difficulty" class="form-control">
+                <option value="">Difficulty</option>
+                <option value="Easy" {% if difficulty == 'Easy' %}selected{% endif %}>Easy</option>
+                <option value="Medium" {% if difficulty == 'Medium' %}selected{% endif %}>Medium</option>
+                <option value="Hard" {% if difficulty == 'Hard' %}selected{% endif %}>Hard</option>
+            </select>
+
+            <select name="tag" class="form-control">
+                <option value="">Tags</option>
+                {% for t in all_tags %}
+                    <option value="{{ t }}" {% if tag == t %}selected{% endif %}>{{ t }}</option>
+                {% endfor %}
+            </select>
+
+            <button type="submit" class="btn-filter">Filter</button>
+            <a href="{{ url_for('problem.list_problems') }}" style="padding: 10px; color: #666; align-self: center;">Reset</a>
+        </form>
+    </div>
+
+    <div class="table-container">
+        <table class="problem-table">
+            <thead>
+                <tr>
+                    <th style="width: 80px;">#</th>
+                    <th>Title</th>
+                    <th style="width: 25%;">Tags</th>
+                    <th style="width: 100px;">Difficulty</th>
+                    <th style="width: 100px;">Acceptance</th>
+                    <th style="width: 100px;">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if problems %}
+                    {% for problem in problems %}
+                    <tr>
+                        <td style="color: #8c8c8c;">{{ problem.problem_id }}</td>
+                        
+                        <td>
+                            <a href="{{ url_for('problem.view_problem', id=problem.problem_id) }}" class="problem-link">{{ problem.title }}</a>
+                        </td>
+
+                        <td>
+                            {% if problem.tags %}
+                                {% set tag_list = problem.tags.split(',') %}
+                                {% for t in tag_list %}
+                                    <span class="tag-pill">{{ t }}</span>
+                                {% endfor %}
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            <span class="badge badge-{{ problem.difficulty }}">
+                                {{ problem.difficulty }}
+                            </span>
+                        </td>
+
+                        <td style="color: #8c8c8c;">45.2%</td> <td class="action-icons">
+                            <a href="{{ url_for('problem.edit', id=problem.problem_id) }}" title="Edit"><i class="fas fa-edit"></i></a>
+                            <form action="{{ url_for('problem.delete', id=problem.problem_id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Delete this problem?');">
+                                <button type="submit" style="background:none; border:none; color:#ff4d4f; cursor:pointer;"><i class="fas fa-trash"></i></button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="6" style="text-align: center; padding: 40px; color: #999;">
+                            No problems found.
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
 </div>
-
-<table style="width: 100%; border-collapse: collapse;">
-    <thead>
-        <tr style="background-color: #f2f2f2; text-align: left;">
-            <th style="padding: 1rem; border-bottom: 2px solid #ddd; width: 10%;">ID</th>
-            <th style="padding: 1rem; border-bottom: 2px solid #ddd; width: 50%;">Title</th>
-            <th style="padding: 1rem; border-bottom: 2px solid #ddd; width: 20%;">Difficulty</th>
-            <th style="padding: 1rem; border-bottom: 2px solid #ddd; width: 20%;">Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for problem in problems %}
-        <tr style="border-bottom: 1px solid #ddd;">
-            <td style="padding: 1rem;">{{ problem.id }}</td>
-            <td style="padding: 1rem;">
-                <a href="/problem/{{ problem.id }}" style="color: #4CAF50; text-decoration: none; font-weight: bold;">
-                    {{ problem.title }}
-                </a>
-            </td>
-            <td style="padding: 1rem;">
-                <span style="padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.85rem;
-                    {% if problem.difficulty == 'Easy' %}background-color: #d4edda; color: #155724;
-                    {% elif problem.difficulty == 'Medium' %}background-color: #fff3cd; color: #856404;
-                    {% else %}background-color: #f8d7da; color: #721c24;{% endif %}">
-                    {{ problem.difficulty }}
-                </span>
-            </td>
-            <td style="padding: 1rem;">
-                <a href="/submit/{{ problem.id }}" class="btn" style="padding: 0.4rem 0.8rem; font-size: 0.9rem;">Solve</a>
-            </td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
 {% endblock %}
