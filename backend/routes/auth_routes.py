@@ -97,6 +97,7 @@ def api_login():
 
         if user and check_password_hash(user["password_hash"], password):
             session["user_id"] = user["user_id"]
+            session["username"] = user["username"]
             return (
                 jsonify(
                     {
