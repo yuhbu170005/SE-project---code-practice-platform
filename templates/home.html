@@ -1,0 +1,156 @@
+{% extends "base.html" %} {% block title %}Home - LiteCode{% endblock %} {%
+block extra_css %}
+<style>
+  /* Hero Banner */
+  .hero-section {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 80px 20px;
+    text-align: center;
+    margin-bottom: 40px;
+  }
+
+  .hero-title {
+    font-size: 3.5rem;
+    margin-bottom: 20px;
+    font-weight: 700;
+  }
+
+  .hero-subtitle {
+    font-size: 1.5rem;
+    margin-bottom: 40px;
+    opacity: 0.9;
+  }
+
+  .hero-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+  }
+
+  .btn-hero {
+    padding: 15px 30px;
+    font-size: 1.1rem;
+    font-weight: bold;
+    text-decoration: none;
+    border-radius: 50px;
+    transition: transform 0.2s;
+  }
+
+  .btn-hero-primary {
+    background: white;
+    color: #764ba2;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  }
+
+  .btn-hero-outline {
+    background: transparent;
+    border: 2px solid white;
+    color: white;
+  }
+
+  .btn-hero:hover {
+    transform: translateY(-3px);
+  }
+
+  /* Feature Grid */
+  .feature-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px 60px;
+  }
+
+  .feature-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 30px;
+  }
+
+  .feature-card {
+    background: white;
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+    text-align: center;
+  }
+
+  .feature-icon {
+    font-size: 3rem;
+    margin-bottom: 20px;
+  }
+</style>
+{% endblock %} {% block content %}
+<!-- Banner Section -->
+<div class="hero-section">
+  <h1 class="hero-title">LiteCode</h1>
+  <p class="hero-subtitle">
+    The leading algorithm practice platform for IT students.
+  </p>
+
+  <div class="hero-buttons">
+    <a
+      href="{{ url_for('problem.list_problems') }}"
+      class="btn-hero btn-hero-primary"
+    >
+      <i class="fas fa-code"></i> Start Practicing
+    </a>
+
+    {% if not session.get('user_id') %}
+    <a
+      href="{{ url_for('auth.view_signup') }}"
+      class="btn-hero btn-hero-outline"
+    >
+      Create Account
+    </a>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Features Section -->
+<div class="feature-container">
+  <div style="text-align: center; margin-bottom: 50px">
+    <h2 style="color: #333; font-size: 2.5rem">Why Choose Us?</h2>
+    <p style="color: #666">
+      We provide all the tools you need to conquer your coding interviews.
+    </p>
+  </div>
+
+  <div class="feature-grid">
+    <!-- Card 1 -->
+    <div class="feature-card">
+      <div class="feature-icon" style="color: #667eea">
+        <i class="fas fa-laptop-code"></i>
+      </div>
+      <h3 style="margin-bottom: 15px; color: #333">Diverse Problems</h3>
+      <p style="color: #666; line-height: 1.6">
+        Over 1000+ algorithm problems ranging from Easy to Hard. Categorized by
+        topics like Array, String, DP...
+      </p>
+    </div>
+
+    <!-- Card 2 -->
+    <div class="feature-card">
+      <div class="feature-icon" style="color: #764ba2">
+        <i class="fas fa-bolt"></i>
+      </div>
+      <h3 style="margin-bottom: 15px; color: #333">Fast Online Judge</h3>
+      <p style="color: #666; line-height: 1.6">
+        Automated code evaluation system providing instant feedback with high
+        precision.
+      </p>
+    </div>
+
+    <!-- Card 3 -->
+    <div class="feature-card">
+      <div class="feature-icon" style="color: #ff6b6b">
+        <i class="fas fa-users"></i>
+      </div>
+      <h3 style="margin-bottom: 15px; color: #333">Strong Community</h3>
+      <p style="color: #666; line-height: 1.6">
+        Join discussions, share solutions, and learn from thousands of other
+        developers.
+      </p>
+    </div>
+  </div>
+</div>
+{% endblock %}
