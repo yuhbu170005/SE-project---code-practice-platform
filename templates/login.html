@@ -1,220 +1,88 @@
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Modern Login</title>
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
-    />
+{% extends "base.html" %} {% block title %}Login - LiteCode{% endblock %} {%
+block content %}
+<div class="row justify-content-center mt-5">
+  <div class="col-md-5">
+    <div class="card shadow-sm border-0">
+      <div class="card-body p-4">
+        <h3 class="text-center mb-4 fw-bold" style="color: #333">
+          Welcome Back
+        </h3>
+        <div id="alert-box"></div>
 
-    <style>
-      /* 1. Basic Reset */
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-      }
-
-      /* 2. Background */
-      body {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        min-height: 100vh;
-        background: #d7f3fd;
-      }
-
-      /* 3. Login Card */
-      .login-container {
-        position: relative;
-        background: rgba(255, 255, 255, 0.95);
-        padding: 40px 30px;
-        border-radius: 15px;
-        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
-        width: 100%;
-        max-width: 400px;
-        text-align: center;
-        backdrop-filter: blur(10px);
-      }
-
-      .login-header h2 {
-        color: #333;
-        margin-bottom: 30px;
-        font-size: 28px;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-      }
-
-      /* 4. Inputs */
-      .input-group {
-        position: relative;
-        margin-bottom: 25px;
-        text-align: left;
-      }
-
-      .input-group label {
-        display: block;
-        margin-bottom: 8px;
-        color: #666;
-        font-weight: 600;
-        font-size: 14px;
-      }
-
-      .input-wrapper {
-        position: relative;
-      }
-
-      .input-wrapper i {
-        position: absolute;
-        left: 15px;
-        top: 50%;
-        transform: translateY(-50%);
-        color: #888;
-      }
-
-      .input-wrapper input {
-        width: 100%;
-        padding: 12px 15px 12px 45px; /* Left padding for icon */
-        border: 2px solid #e1e1e1;
-        border-radius: 8px;
-        outline: none;
-        transition: 0.3s;
-        font-size: 15px;
-      }
-
-      .input-wrapper input:focus {
-        border-color: #764ba2;
-        box-shadow: 0 0 8px rgba(118, 75, 162, 0.2);
-      }
-
-      /* 5. Login Button */
-      .btn-login {
-        width: 100%;
-        padding: 12px;
-        background: linear-gradient(to right, #667eea, #764ba2);
-        border: none;
-        border-radius: 8px;
-        color: white;
-        font-size: 16px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: transform 0.2s, box-shadow 0.2s;
-        margin-top: 10px;
-      }
-
-      .btn-login:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 5px 15px rgba(118, 75, 162, 0.4);
-      }
-
-      .btn-login:active {
-        transform: scale(0.98);
-      }
-
-      /* 6. Footer Links */
-      .footer-links {
-        margin-top: 20px;
-        display: flex;
-        justify-content: space-between;
-        font-size: 13px;
-      }
-
-      .footer-links a {
-        text-decoration: none;
-        color: #666;
-        transition: color 0.3s;
-      }
-
-      .footer-links a:hover {
-        color: #764ba2;
-        text-decoration: underline;
-      }
-
-      /* Mobile Responsive */
-      @media (max-width: 480px) {
-        .login-container {
-          width: 90%;
-          padding: 30px 20px;
-        }
-      }
-    </style>
-  </head>
-  <body>
-    <div class="login-container">
-      <div class="login-header">
-        <h2>Login</h2>
-      </div>
-
-      <form id="loginForm" action="/api/login" method="POST">
-        <div class="input-group">
-          <label for="username">Username</label>
-          <div class="input-wrapper">
-            <i class="fas fa-user"></i>
+        <form id="login-form">
+          <div class="mb-3">
+            <label class="form-label fw-bold small text-secondary"
+              >Username or Email</label
+            >
             <input
               type="text"
-              id="username"
               name="username"
-              placeholder="Enter your username"
+              class="form-control"
               required
+              placeholder="Enter username"
             />
           </div>
-        </div>
-
-        <div class="input-group">
-          <label for="password">Password</label>
-          <div class="input-wrapper">
-            <i class="fas fa-lock"></i>
+          <div class="mb-4">
+            <label class="form-label fw-bold small text-secondary"
+              >Password</label
+            >
             <input
               type="password"
               name="password"
-              id="password"
-              placeholder="Enter your password"
+              class="form-control"
               required
+              placeholder="Enter password"
             />
           </div>
+          <button
+            type="submit"
+            class="btn btn-primary w-100 py-2 fw-bold"
+            style="background-color: #764ba2; border: none"
+          >
+            Login
+          </button>
+        </form>
+
+        <div class="text-center mt-3">
+          <small class="text-muted"
+            >Don't have an account?
+            <a href="{{ url_for('auth.view_signup') }}" style="color: #764ba2"
+              >Sign up</a
+            ></small
+          >
         </div>
-
-        <button type="submit" class="btn-login">LOGIN</button>
-        <script>
-          document
-            .getElementById("loginForm")
-            .addEventListener("submit", async function (e) {
-              e.preventDefault(); // 1. Chặn load lại trang
-
-              // 2. Lấy dữ liệu từ form
-              const formData = new FormData(this);
-              const data = Object.fromEntries(formData.entries());
-
-              // 3. Gửi lên Server
-              const response = await fetch("/api/login", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(data),
-              });
-
-              // 4. Server trả lời (biến result chứa cái JSON từ Python)
-              const result = await response.json();
-
-              // ===> BẠN GẮN ĐOẠN CODE ĐÓ VÀO ĐÂY <===
-              if (result.success == true) {
-                // Nếu đăng nhập đúng -> Chuyển hướng về trang chủ
-                window.location.href = "/";
-              } else {
-                // Nếu sai -> Hiện thông báo lỗi
-                alert(result.message);
-              }
-            });
-        </script>
-
-        <div class="footer-links">
-          <a href="#">Forgot password?</a>
-          <a href="signup">Sign up</a>
-        </div>
-      </form>
+      </div>
     </div>
-  </body>
-</html>
+  </div>
+</div>
+{% endblock %} {% block extra_js %}
+<script>
+  document
+    .getElementById("login-form")
+    .addEventListener("submit", async function (e) {
+      e.preventDefault();
+      const formData = new FormData(this);
+      const data = Object.fromEntries(formData.entries());
+
+      // Convert to JSON for Node backend (Flask version used request.form, but this is cleaner)
+      try {
+        const res = await fetch("/api/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data),
+        });
+        const result = await res.json();
+
+        if (result.success) {
+          window.location.href = "/problems";
+        } else {
+          document.getElementById("alert-box").innerHTML = `
+                <div class="alert alert-danger">${result.message}</div>
+            `;
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    });
+</script>
+{% endblock %}

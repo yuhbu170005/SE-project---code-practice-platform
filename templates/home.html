@@ -1,37 +1,96 @@
-{% extends "base.html" %} {% block title %}Home{% endblock %} {% block content
-%}
-
-<div
-  style="
+{% extends "base.html" %} {% block title %}Home - LiteCode{% endblock %} {%
+block extra_css %}
+<style>
+  /* Hero Banner */
+  .hero-section {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
     padding: 80px 20px;
     text-align: center;
-    margin-top: -20px;
     margin-bottom: 40px;
-  "
->
-  <h1 style="font-size: 3.5rem; margin-bottom: 20px; font-weight: 700">
-    LiteCode
-  </h1>
-  <p style="font-size: 1.5rem; margin-bottom: 40px; opacity: 0.9">
+  }
+
+  .hero-title {
+    font-size: 3.5rem;
+    margin-bottom: 20px;
+    font-weight: 700;
+  }
+
+  .hero-subtitle {
+    font-size: 1.5rem;
+    margin-bottom: 40px;
+    opacity: 0.9;
+  }
+
+  .hero-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+  }
+
+  .btn-hero {
+    padding: 15px 30px;
+    font-size: 1.1rem;
+    font-weight: bold;
+    text-decoration: none;
+    border-radius: 50px;
+    transition: transform 0.2s;
+  }
+
+  .btn-hero-primary {
+    background: white;
+    color: #764ba2;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  }
+
+  .btn-hero-outline {
+    background: transparent;
+    border: 2px solid white;
+    color: white;
+  }
+
+  .btn-hero:hover {
+    transform: translateY(-3px);
+  }
+
+  /* Feature Grid */
+  .feature-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px 60px;
+  }
+
+  .feature-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 30px;
+  }
+
+  .feature-card {
+    background: white;
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+    text-align: center;
+  }
+
+  .feature-icon {
+    font-size: 3rem;
+    margin-bottom: 20px;
+  }
+</style>
+{% endblock %} {% block content %}
+<!-- Banner Section -->
+<div class="hero-section">
+  <h1 class="hero-title">LiteCode</h1>
+  <p class="hero-subtitle">
     The leading algorithm practice platform for IT students.
   </p>
 
-  <div style="display: flex; justify-content: center; gap: 20px">
+  <div class="hero-buttons">
     <a
       href="{{ url_for('problem.list_problems') }}"
-      style="
-        background: white;
-        color: #764ba2;
-        padding: 15px 30px;
-        font-size: 1.1rem;
-        font-weight: bold;
-        text-decoration: none;
-        border-radius: 50px;
-        transition: transform 0.2s;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-      "
+      class="btn-hero btn-hero-primary"
     >
       <i class="fas fa-code"></i> Start Practicing
     </a>
@@ -39,17 +98,7 @@
     {% if not session.get('user_id') %}
     <a
       href="{{ url_for('auth.view_signup') }}"
-      style="
-        background: transparent;
-        border: 2px solid white;
-        color: white;
-        padding: 15px 30px;
-        font-size: 1.1rem;
-        font-weight: bold;
-        text-decoration: none;
-        border-radius: 50px;
-        transition: background 0.2s;
-      "
+      class="btn-hero btn-hero-outline"
     >
       Create Account
     </a>
@@ -57,7 +106,8 @@
   </div>
 </div>
 
-<div style="max-width: 1200px; margin: 0 auto; padding: 0 20px 60px">
+<!-- Features Section -->
+<div class="feature-container">
   <div style="text-align: center; margin-bottom: 50px">
     <h2 style="color: #333; font-size: 2.5rem">Why Choose Us?</h2>
     <p style="color: #666">
@@ -65,23 +115,10 @@
     </p>
   </div>
 
-  <div
-    style="
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 30px;
-    "
-  >
-    <div
-      style="
-        background: white;
-        padding: 30px;
-        border-radius: 15px;
-        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
-        text-align: center;
-      "
-    >
-      <div style="font-size: 3rem; color: #667eea; margin-bottom: 20px">
+  <div class="feature-grid">
+    <!-- Card 1 -->
+    <div class="feature-card">
+      <div class="feature-icon" style="color: #667eea">
         <i class="fas fa-laptop-code"></i>
       </div>
       <h3 style="margin-bottom: 15px; color: #333">Diverse Problems</h3>
@@ -91,16 +128,9 @@
       </p>
     </div>
 
-    <div
-      style="
-        background: white;
-        padding: 30px;
-        border-radius: 15px;
-        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
-        text-align: center;
-      "
-    >
-      <div style="font-size: 3rem; color: #764ba2; margin-bottom: 20px">
+    <!-- Card 2 -->
+    <div class="feature-card">
+      <div class="feature-icon" style="color: #764ba2">
         <i class="fas fa-bolt"></i>
       </div>
       <h3 style="margin-bottom: 15px; color: #333">Fast Online Judge</h3>
@@ -110,16 +140,9 @@
       </p>
     </div>
 
-    <div
-      style="
-        background: white;
-        padding: 30px;
-        border-radius: 15px;
-        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
-        text-align: center;
-      "
-    >
-      <div style="font-size: 3rem; color: #ff6b6b; margin-bottom: 20px">
+    <!-- Card 3 -->
+    <div class="feature-card">
+      <div class="feature-icon" style="color: #ff6b6b">
         <i class="fas fa-users"></i>
       </div>
       <h3 style="margin-bottom: 15px; color: #333">Strong Community</h3>
@@ -130,5 +153,4 @@
     </div>
   </div>
 </div>
-
 {% endblock %}
