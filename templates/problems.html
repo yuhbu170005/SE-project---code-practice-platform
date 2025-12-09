@@ -1,28 +1,22 @@
 {% extends "base.html" %}
-
 {% block title %}Problem List - LiteCode{% endblock %}
 
 {% block extra_css %}
 <style>
-    /* 1. Layout & Container */
+    /* Page Container riêng của trang này */
     .page-container {
         max-width: 1200px;
         margin: 40px auto;
         padding: 0 20px;
     }
-
-    /* 2. Header Section */
+    
     .page-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
         margin-bottom: 25px;
     }
-    .page-title {
-        font-size: 24px;
-        font-weight: 600;
-        color: #262626;
-    }
+    
     .btn-create {
         background-color: #28a745;
         color: white;
@@ -32,128 +26,166 @@
         font-weight: 500;
         transition: background 0.2s;
     }
-    .btn-create:hover { background-color: #218838; }
+    .btn-create:hover { background-color: #218838; color: white; }
 
-    /* 3. Filter Box */
+    /* Filter Card */
     .filter-card {
         background: white;
-        padding: 20px;
-        border-radius: 8px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-        margin-bottom: 25px;
-        display: flex;
-        gap: 15px;
-        flex-wrap: wrap;
-    }
-    .form-control {
-        padding: 10px;
-        border: 1px solid #d9d9d9;
-        border-radius: 4px;
-        font-size: 14px;
-        outline: none;
-    }
-    .form-control:focus { border-color: #40a9ff; }
-    .search-input { flex: 1; min-width: 200px; }
-    .btn-filter {
-        background: #007bff; color: white; border: none;
-        padding: 10px 20px; border-radius: 4px; cursor: pointer;
-    }
-
-    /* 4. Table Design (Giống LeetCode) */
-    .table-container {
-        background: white;
-        border-radius: 8px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-        overflow: hidden; /* Bo góc cho table */
-    }
-    .problem-table {
-        width: 100%;
-        border-collapse: collapse;
-    }
-    .problem-table th {
-        background-color: #fafafa;
-        color: #595959;
-        font-weight: 600;
-        text-align: left;
-        padding: 16px;
-        border-bottom: 1px solid #f0f0f0;
-    }
-    .problem-table td {
-        padding: 16px;
-        border-bottom: 1px solid #f0f0f0;
-        color: #262626;
-    }
-    .problem-table tr:hover {
-        background-color: #f8f9fa; /* Hiệu ứng hover dòng */
-    }
-    .problem-link {
-        color: #262626;
-        text-decoration: none;
-        font-weight: 500;
-        transition: color 0.2s;
-    }
-    .problem-link:hover { color: #007bff; }
-
-    /* 5. Badges (Màu sắc độ khó) */
-    .badge {
-        padding: 4px 12px;
-        border-radius: 20px;
-        font-size: 12px;
-        font-weight: 600;
-        display: inline-block;
-    }
-    .badge-Easy { background-color: #e6f7ff; color: #00af9b; } /* Xanh LeetCode */
-    .badge-Medium { background-color: #fffbe6; color: #ffb800; } /* Vàng LeetCode */
-    .badge-Hard { background-color: #fff1f0; color: #ff2d55; } /* Đỏ LeetCode */
-
-    .tag-pill {
-        background: #f0f0f0;
-        color: #666;
-        padding: 2px 8px;
-        border-radius: 4px;
-        font-size: 11px;
-        margin-right: 4px;
+        padding: 25px;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        margin-bottom: 30px;
+        border: 1px solid #eee;
     }
     
-    .action-icons a {
-        margin-right: 10px;
-        color: #8c8c8c;
-        transition: color 0.2s;
+    .filter-form {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
     }
-    .action-icons a:hover { color: #333; }
+    
+    /* Input & Select */
+    .form-control {
+        padding: 10px 15px;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        font-size: 14px;
+        outline: none;
+        transition: border 0.2s;
+        height: 45px;
+    }
+    .form-control:focus { border-color: #764ba2; box-shadow: none; }
+
+    .btn-filter {
+        background: #764ba2; color: white; border: none;
+        padding: 0 25px; border-radius: 8px; cursor: pointer;
+        height: 45px; font-weight: 600;
+        transition: background 0.2s;
+    }
+    .btn-filter:hover { background: #5e3b85; }
+
+    /* Custom Dropdown */
+    .custom-dropdown { position: relative; display: inline-block; width: 100%; }
+    .dropdown-btn {
+        width: 100%; background: #fff; border: 1px solid #e0e0e0;
+        padding: 0 15px; border-radius: 8px; cursor: pointer;
+        text-align: left; display: flex; justify-content: space-between; align-items: center;
+        font-size: 14px; height: 45px; color: #555;
+    }
+    .dropdown-content {
+        display: none; position: absolute; background-color: #fff;
+        min-width: 300px; width: 100%; box-shadow: 0px 8px 24px 0px rgba(0,0,0,0.15);
+        z-index: 1000; border: 1px solid #ddd; border-radius: 8px;
+        max-height: 300px; overflow-y: auto; top: 110%; padding: 10px;
+    }
+    .dropdown-content.show { display: flex; flex-wrap: wrap; gap: 8px; }
+    .dropdown-item { display: inline-block; width: auto; cursor: pointer; user-select: none; margin: 0; }
+    .dropdown-item input[type="checkbox"] { display: none; }
+    .dropdown-item span {
+        display: inline-block; padding: 6px 14px; background-color: #f5f7fa; color: #555;
+        border-radius: 20px; font-size: 13px; transition: all 0.2s; border: 1px solid transparent; white-space: nowrap;
+    }
+    .dropdown-item:hover span { background-color: #e4e7eb; }
+    .dropdown-item input:checked + span { background-color: #e6f7ff; color: #007bff; border-color: #007bff; font-weight: 600; }
+
+    /* Table */
+    .table-container { background: white; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); overflow: hidden; border: 1px solid #eee; }
+    .problem-table { width: 100%; border-collapse: collapse; }
+    .problem-table th { background-color: #f8f9fa; color: #666; font-weight: 600; text-align: left; padding: 18px; border-bottom: 1px solid #eee; }
+    .problem-table td { padding: 18px; border-bottom: 1px solid #eee; color: #333; }
+    .problem-table tr:hover { background-color: #f8fbff; }
+    
+    .problem-link { color: #333; text-decoration: none; font-weight: 600; font-size: 15px; }
+    .problem-link:hover { color: #764ba2; }
+    
+    .badge { padding: 5px 15px; border-radius: 20px; font-size: 12px; font-weight: 600; display: inline-block; }
+    .badge-Easy { background-color: #e6f7ff; color: #00af9b; }
+    .badge-Medium { background-color: #fffbe6; color: #ffb800; }
+    .badge-Hard { background-color: #fff1f0; color: #ff2d55; }
+    .tag-pill { background: #f0f2f5; color: #666; padding: 4px 10px; border-radius: 6px; font-size: 12px; margin-right: 5px; }
+    /* Pagination: use site primary color */
+    .pagination .page-link {
+    color: var(--primary-color); /* text color for links */
+    border-color: #e9ecef;       /* adjust border if wanted */
+    background-color: white;
+    }
+
+    .pagination .page-item.active .page-link {
+    background-color: var(--primary-color); /* active background */
+    border-color: var(--primary-color);
+    color: white; /* active text color */
+    }
+
+    .pagination .page-item .page-link:hover {
+    background-color: var(--primary-hover);
+    color: white;
+    border-color: var(--primary-hover);
+    }
+
+    .pagination .page-item.disabled .page-link {
+    color: #6c757d;
+    pointer-events: none;
+    }
 </style>
 {% endblock %}
 
-{% block content %}
+/* --- SỬA Ở ĐÂY: Dùng layout_wrapper bao quanh toàn bộ nội dung --- */
+{% block layout_wrapper %}
 <div class="page-container">
     
     <div class="page-header">
-        <div class="page-title">Problem List</div>
-        <a href="{{ url_for('problem.create') }}" class="btn-create">
-            <i class="fas fa-plus"></i> Create Problem
-        </a>
+        <h2 style="font-size: 28px; color: #333; font-weight: 700;">Problem List</h2>
+        {% if session.get('role') == 'admin' or session.get('user_id') == 1 %}
+            <a href="{{ url_for('problem.create') }}" class="btn-create">
+                <i class="fas fa-plus me-1"></i> Create Problem
+            </a>
+        {% endif %}
     </div>
 
     <div class="filter-card">
-        <form action="{{ url_for('problem.list_problems') }}" method="GET" style="display: flex; width: 100%; gap: 10px;">
-            <input type="text" name="search" class="form-control search-input" placeholder="Search questions..." value="{{ search }}">
-            
-            <select name="difficulty" class="form-control">
-                <option value="">Difficulty</option>
-                <option value="Easy" {% if difficulty == 'Easy' %}selected{% endif %}>Easy</option>
-                <option value="Medium" {% if difficulty == 'Medium' %}selected{% endif %}>Medium</option>
-                <option value="Hard" {% if difficulty == 'Hard' %}selected{% endif %}>Hard</option>
-            </select>
+        <form action="{{ url_for('problem.list_problems') }}" method="GET" class="filter-form">
+            <div style="display: flex; gap: 15px; width: 100%;">
+                
+                <div style="flex: 2; position: relative;">
+                    <i class="fas fa-search" style="position: absolute; left: 15px; top: 15px; color: #999;"></i>
+                    <input type="text" name="search" class="form-control" style="padding-left: 40px;" 
+                           placeholder="Search questions..." value="{{ search }}">
+                </div>
+                
+                <select name="difficulty" class="form-control" style="flex: 1;">
+                    <option value="">All Difficulties</option>
+                    <option value="Easy" {% if difficulty == 'Easy' %}selected{% endif %}>Easy</option>
+                    <option value="Medium" {% if difficulty == 'Medium' %}selected{% endif %}>Medium</option>
+                    <option value="Hard" {% if difficulty == 'Hard' %}selected{% endif %}>Hard</option>
+                </select>
+                <div class="custom-dropdown" id="tagDropdown" style="flex: 1;">
+                    <button type="button" class="dropdown-btn" onclick="toggleTagDropdown()">
+                        <span>
+                            Tags 
+                            {% if selected_tags %}
+                                <b style="color: #764ba2">({{ selected_tags|length }})</b>
+                            {% endif %}
+                        </span>
+                        <!-- <i class="fas fa-chevron-down" style="font-size: 12px;"></i> -->
+                    </button>
 
-            <select name="tag" class="form-control">
-                <option value="">Tags</option>
-                {% for t in all_tags %}
-                    <option value="{{ t }}" {% if tag == t %}selected{% endif %}>{{ t }}</option>
-                {% endfor %}
-            </select>
+                    <div class="dropdown-content" id="tagDropdownContent">
+                        {% for t in all_tags %}
+                        <label class="dropdown-item">
+                            <input type="checkbox" name="tag" value="{{ t }}" 
+                                   {% if selected_tags and t in selected_tags %}checked{% endif %}>
+                            <span>{{ t }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
 
-            <button type="submit" class="btn-filter">Filter</button>
-            <a href="{{ url_for('problem.list_problems') }}" style="padding: 10px; color: #666; align-self: center;">Reset</a>
+                <button type="submit" class="btn-filter">Filter</button>
+                <a href="{{ url_for('problem.list_problems') }}" 
+                   style="display: flex; align-items: center; padding: 0 15px; color: #666; text-decoration: none; font-weight: 500;">
+                   Reset
+                </a>
+            </div>
         </form>
     </div>
 
@@ -161,87 +193,149 @@
         <table class="problem-table">
             <thead>
                 <tr>
-                    <th style="width: 80px;">#</th>
+                    <th style="width: 60px;">#</th>
                     <th>Title</th>
-                    <th style="width: 25%;">Tags</th>
-                    <th style="width: 100px;">Difficulty</th>
-                    <th style="width: 100px;">Action</th>
-                    <!-- <th style="width: 100px;">Action</th> -->
+                    <th style="width: 35%;">Tags</th>
+                    <th style="width: 120px;">Difficulty</th>
+                    {% if session.get('role') == 'admin' or session.get('user_id') == 1 %}
+                        <th style="width: 100px;">Action</th>
+                    {% endif %}
                 </tr>
             </thead>
             <tbody>
                 {% if problems %}
                     {% for problem in problems %}
-                    <tr>
-                        <td style="color: #8c8c8c;">{{ problem.problem_id }}</td>
+                    <tr style="cursor: pointer;" onclick="navigateTo('{{ url_for('problem.problem_detail', slug=problem.slug) }}')">
+                        
+                        <td style="color: #999; font-weight: 500;">{{ problem.problem_id }}</td>
                         
                         <td>
-                            <a href="{{ url_for('problem.view_problem', id=problem.problem_id) }}" class="problem-link">{{ problem.title }}</a>
+                            <a href="{{ url_for('problem.problem_detail', slug=problem.slug) }}" class="problem-link">
+                                {{ problem.title }}
+                            </a>
                         </td>
 
                         <td>
                             {% if problem.tags %}
-                                {% set tag_list = problem.tags.split(',') %}
-                                {% for t in tag_list %}
+                                {% for t in problem.tags %}
                                     <span class="tag-pill">{{ t }}</span>
                                 {% endfor %}
                             {% endif %}
                         </td>
-
+                        
                         <td>
-                            <span class="badge badge-{{ problem.difficulty }}">
-                                {{ problem.difficulty }}
-                            </span>
+                            <span class="badge badge-{{ problem.difficulty }}">{{ problem.difficulty }}</span>
                         </td>
-
-                        <td class="action-icons">
-    <a href="{{ url_for('problem.edit', id=problem.problem_id) }}" title="Edit">
-        <i class="fas fa-edit"></i>
-    </a>
-    
-    <button type="button" style="background:none; border:none; color:#ff4d4f; cursor:pointer;" 
-            onclick="confirmDelete('{{ problem.problem_id }}')">
-        <i class="fas fa-trash"></i>
-    </button>
-</td>
+                        
+                        
+                            {% if session.get('role') == 'admin' or session.get('user_id') == 1 %}
+                                <td onclick="event.stopPropagation()">
+                                    <a href="{{ url_for('problem.edit', id=problem.problem_id) }}" style="margin-right: 15px; color: #8c8c8c; transition: color 0.2s;">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <button onclick="confirmDelete('{{ problem.problem_id }}')" style="background:none; border:none; color:#ff4d4f; cursor:pointer; transition: transform 0.2s;">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </td>
+                            {% endif %}
+                        
                     </tr>
                     {% endfor %}
                 {% else %}
                     <tr>
-                        <td colspan="6" style="text-align: center; padding: 40px; color: #999;">
-                            No problems found.
+                        <td colspan="5" style="text-align: center; padding: 60px; color: #999;">
+                            <i class="fas fa-search" style="font-size: 40px; margin-bottom: 20px; opacity: 0.3;"></i><br>
+                            No problems found matching your criteria.
                         </td>
                     </tr>
                 {% endif %}
             </tbody>
         </table>
-    </div>
-</div>
-<form id="deleteForm" method="POST" style="display: none;"></form>
+        <!-- Pagination -->
+    {% if pagination %}
+    <nav aria-label="Problems pagination" class="d-flex justify-content-center mt-4">
+    <ul class="pagination">
+        <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+        <a class="page-link" href="{{ url_for('problem.list_problems', page=pagination.page-1, search=search, difficulty=difficulty, tag=selected_tags) }}" tabindex="-1">Previous</a>
+        </li>
 
+        {# show a window of pages (e.g., from current-2 to current+2) #}
+        {% set start = pagination.page - 2 if pagination.page - 2 > 1 else 1 %}
+        {% set end = pagination.page + 2 if pagination.page + 2 < pagination.total_pages else pagination.total_pages %}
+        {% if start > 1 %}
+        <li class="page-item"><a class="page-link" href="{{ url_for('problem.list_problems', page=1, search=search, difficulty=difficulty, tag=selected_tags) }}">1</a></li>
+        {% if start > 2 %}
+            <li class="page-item disabled"><span class="page-link">…</span></li>
+        {% endif %}
+        {% endif %}
+
+        {% for pnum in range(start, end + 1) %}
+        <li class="page-item {% if pnum == pagination.page %}active{% endif %}">
+            <a class="page-link" href="{{ url_for('problem.list_problems', page=pnum, search=search, difficulty=difficulty, tag=selected_tags) }}">{{ pnum }}</a>
+        </li>
+        {% endfor %}
+
+        {% if end < pagination.total_pages %}
+        {% if end < pagination.total_pages - 1 %}
+            <li class="page-item disabled"><span class="page-link">…</span></li>
+        {% endif %}
+        <li class="page-item">
+            <a class="page-link" href="{{ url_for('problem.list_problems', page=pagination.total_pages, search=search, difficulty=difficulty, tag=selected_tags) }}">{{ pagination.total_pages }}</a>
+        </li>
+        {% endif %}
+
+        <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+        <a class="page-link" href="{{ url_for('problem.list_problems', page=pagination.page+1, search=search, difficulty=difficulty, tag=selected_tags) }}">Next</a>
+        </li>
+    </ul>
+    </nav>
+    {% endif %}
+    </div>
+    
+</div>
+
+<form id="deleteForm" method="POST" style="display: none;"></form>
+{% endblock %}
+
+{% block extra_js %}
 <script>
+    function navigateTo(url) {
+        window.location.href = url;
+    }
+
     function confirmDelete(problemId) {
         Swal.fire({
             title: 'Are you sure?',
             text: "You won't be able to revert this!",
             icon: 'warning',
             showCancelButton: true,
-            confirmButtonColor: '#3085d6',
-            cancelButtonColor: '#d33',
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
             confirmButtonText: 'Yes, delete it!'
         }).then((result) => {
             if (result.isConfirmed) {
-                // 1. Lấy cái form chung
                 const form = document.getElementById('deleteForm');
-                
-                // 2. Cập nhật đường dẫn action cho đúng bài cần xóa
-                // Mẹo: Dùng chuỗi thay thế hoặc nối chuỗi
                 form.action = "/problems/delete/" + problemId;
-                
-                // 3. Gửi form
                 form.submit();
             }
         })
     }
+
+    // Logic Dropdown
+    function toggleTagDropdown() {
+        document.getElementById("tagDropdownContent").classList.toggle("show");
+    }
+
+    // Đóng dropdown khi click ra ngoài
+    window.addEventListener('click', function(e) {
+        const dropdown = document.getElementById('tagDropdown');
+        const content = document.getElementById('tagDropdownContent');
+        
+        if (!dropdown.contains(e.target)) {
+            if (content.classList.contains('show')) {
+                content.classList.remove('show');
+            }
+        }
+    });
 </script>
 {% endblock %}
