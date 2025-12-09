@@ -1,6 +1,15 @@
-from flask import Blueprint, render_template, request, redirect, url_for, jsonify
+from flask import (
+    Blueprint,
+    render_template,
+    request,
+    redirect,
+    url_for,
+    jsonify,
+    session,
+)
 from mysql.connector import Error
 from backend.database import get_db_connection
+from backend.utils import admin_required
 
 # 1. Tạo Blueprint
 problem_bp = Blueprint("problem", __name__)
@@ -19,47 +28,110 @@ def list_problems():
 
     cursor = conn.cursor(dictionary=True)
 
-    difficulty = request.args.get("difficulty", "")
-    tag = request.args.get("tag", "")
-    search = request.args.get("search", "")
+    # Params
+    difficulty = request.args.get("difficulty", "").strip()
+    search = request.args.get("search", "").strip()
+    selected_tags = request.args.getlist("tag")
 
-    # Thay đổi logic nhận tags dạng list nếu bạn đã sửa frontend
-    tags_filter = request.args.getlist("tag")
+    # Pagination params
+    try:
+        page = int(request.args.get("page", 1))
+        if page < 1:
+            page = 1
+    except ValueError:
+        page = 1
+    per_page = 7
+    offset = (page - 1) * per_page
 
-    query = """
+    # Base query and params (we will use EXISTS for tag filtering)
+    base_where = " WHERE 1=1 "
+    params = []
+
+    if difficulty:
+        base_where += " AND p.difficulty = %s"
+        params.append(difficulty)
+
+    if search:
+        s = search[:100]
+        search_param = f"%{s}%"
+        base_where += " AND p.title LIKE %s"
+        params.append(search_param)
+
+    # If selected_tags -> add EXISTS filter (safer than HAVING)
+    tag_exists_clause = ""
+    tag_params = []
+    if selected_tags:
+        placeholders = ", ".join(["%s"] * len(selected_tags))
+        tag_exists_clause = f""" AND EXISTS (
+            SELECT 1 FROM problem_tags pt2
+            JOIN tags t2 ON pt2.tag_id = t2.tag_id
+            WHERE pt2.problem_id = p.problem_id AND t2.tag_name IN ({placeholders})
+        )"""
+        tag_params = selected_tags
+
+    # Count total distinct problems matching filters
+    count_query = f"""
+        SELECT COUNT(DISTINCT p.problem_id) AS total
+        FROM problems p
+        LEFT JOIN problem_tags pt ON p.problem_id = pt.problem_id
+        LEFT JOIN tags t ON pt.tag_id = t.tag_id
+        {base_where}
+        {tag_exists_clause}
+    """
+    try:
+        cursor.execute(count_query, params + tag_params)
+        total_count_row = cursor.fetchone()
+        total_count = total_count_row["total"] if total_count_row else 0
+    except Exception as e:
+        cursor.close()
+        conn.close()
+        return render_template("problems.html", problems=[], error=f"DB error: {e}")
+
+    total_pages = (total_count + per_page - 1) // per_page if total_count > 0 else 1
+
+    # Main query: fetch paged results (group and concat tags)
+    main_query = f"""
         SELECT p.*, GROUP_CONCAT(t.tag_name) as tags
         FROM problems p
         LEFT JOIN problem_tags pt ON p.problem_id = pt.problem_id
         LEFT JOIN tags t ON pt.tag_id = t.tag_id
-        WHERE 1=1
+        {base_where}
+        {tag_exists_clause}
+        GROUP BY p.problem_id
+        ORDER BY p.problem_id ASC
+        LIMIT %s OFFSET %s
     """
-    params = []
+    try:
+        final_params = params + tag_params + [per_page, offset]
+        cursor.execute(main_query, final_params)
+        problems = cursor.fetchall()
+    except Exception as e:
+        cursor.close()
+        conn.close()
+        return render_template("problems.html", problems=[], error=f"DB error: {e}")
 
-    if difficulty:
-        query += " AND p.difficulty = %s"
-        params.append(difficulty)
-
-    if search:
-        query += " AND (p.title LIKE %s OR p.description LIKE %s)"
-        search_param = f"%{search}%"
-        params.extend([search_param, search_param])
-
-    # Xử lý lọc nhiều tags
-    if tags_filter:
-        placeholders = ", ".join(["%s"] * len(tags_filter))
-        query += f" AND t.tag_name IN ({placeholders})"
-        params.extend(tags_filter)
-
-    query += " GROUP BY p.problem_id ORDER BY p.problem_id ASC"
-
-    cursor.execute(query, params)
-    problems = cursor.fetchall()
-
+    # Lấy danh sách tất cả Tags để hiển thị menu
     cursor.execute("SELECT DISTINCT tag_name FROM tags ORDER BY tag_name")
     all_tags = [row["tag_name"] for row in cursor.fetchall()]
 
     cursor.close()
     conn.close()
+
+    # Convert tags string -> list for template if present
+    for p in problems or []:
+        if p.get("tags"):
+            p["tags"] = p["tags"].split(",")
+        else:
+            p["tags"] = []
+
+    pagination = {
+        "page": page,
+        "per_page": per_page,
+        "total_count": total_count,
+        "total_pages": total_pages,
+        "has_prev": page > 1,
+        "has_next": page < total_pages,
+    }
 
     return render_template(
         "problems.html",
@@ -67,12 +139,14 @@ def list_problems():
         all_tags=all_tags,
         difficulty=difficulty,
         search=search,
-        selected_tags_list=tags_filter,  # Truyền list tags sang HTML
+        selected_tags=selected_tags,
+        pagination=pagination,
     )
 
 
 # Đường dẫn: /problems/create
 @problem_bp.route("/problems/create", methods=["GET", "POST"])
+@admin_required
 def create():
     if request.method == "POST":
         title = request.form.get("title")
@@ -103,7 +177,6 @@ def create():
                 )
 
             conn.commit()
-            # Redirect về danh sách bài tập (chú ý: 'problem.list_problems')
             return redirect(url_for("problem.list_problems"))
         except Error as e:
             return render_template("create.html", error=f"Error: {e}"), 500
@@ -124,6 +197,7 @@ def create():
 
 # Đường dẫn: /problems/edit/<id>
 @problem_bp.route("/problems/edit/<int:id>", methods=["GET", "POST"])
+@admin_required
 def edit(id):
     conn = get_db_connection()
     if not conn:
@@ -161,7 +235,6 @@ def edit(id):
             cursor.close()
             conn.close()
 
-            # SỬA LỖI 1: Redirect đúng tên blueprint
             return redirect(url_for("problem.list_problems"))
 
         except Error as e:
@@ -176,7 +249,7 @@ def edit(id):
 
     # --- XỬ LÝ GET (Hiển thị form) ---
 
-    # 1. Lấy thông tin bài tập + danh sách tag ID đã chọn (dạng chuỗi "1,2,3")
+    # 1. Lấy thông tin bài tập + danh sách tag ID đã chọn
     cursor.execute(
         """
         SELECT p.*, GROUP_CONCAT(pt.tag_id) as tag_ids
@@ -189,7 +262,7 @@ def edit(id):
     )
     problem = cursor.fetchone()
 
-    # 2. Lấy toàn bộ Tags để hiển thị checkbox
+    # 2. Lấy toàn bộ Tags
     cursor.execute("SELECT tag_id, tag_name FROM tags ORDER BY tag_name")
     tags = cursor.fetchall()
 
@@ -199,11 +272,8 @@ def edit(id):
     if not problem:
         return redirect(url_for("problem.list_problems"))
 
-    # SỬA LỖI 2: Xử lý tag_ids thành list để HTML dùng
-    # Ví dụ DB trả về "1,2" -> Python đổi thành ['1', '2']
     selected_tags = str(problem["tag_ids"]).split(",") if problem["tag_ids"] else []
 
-    # Gửi đủ 3 biến sang HTML
     return render_template(
         "edit.html", problem=problem, tags=tags, selected_tags=selected_tags
     )
@@ -211,6 +281,7 @@ def edit(id):
 
 # Đường dẫn: /problems/delete/<id>
 @problem_bp.route("/problems/delete/<int:id>", methods=["POST"])
+@admin_required
 def delete(id):
     conn = get_db_connection()
     if conn:
@@ -227,7 +298,6 @@ def delete(id):
 
 @problem_bp.route("/api/problems", methods=["GET"])
 def api_problems():
-    # ... (Copy logic if needed) ...
     pass
 
 
@@ -251,20 +321,65 @@ def view_problem(id):
     """,
         (id,),
     )
-
     problem = cursor.fetchone()
+
+    # 2. LẤY TESTCASES MẪU (SỬA TÊN BẢNG VÀ TÊN CỘT)
+    # Bảng: test_cases | Cột: input
+    cursor.execute(
+        """
+        SELECT input, expected_output 
+        FROM test_cases 
+        WHERE problem_id = %s AND is_hidden = FALSE 
+        LIMIT 3
+        """,
+        (id,),
+    )
+    sample_testcases = cursor.fetchall()
+
     cursor.close()
     conn.close()
 
-    # Nếu không tìm thấy bài tập thì báo lỗi 404
     if not problem:
         return render_template("404.html"), 404
 
-    # Xử lý tags thành list
     if problem["tags"]:
         problem["tags"] = problem["tags"].split(",")
     else:
         problem["tags"] = []
 
-    # Render ra giao diện làm bài
-    return render_template("problem_detail.html", problem=problem)
+    return render_template(
+        "problem_detail.html", problem=problem, testcases=sample_testcases
+    )
+
+
+# backend/routes/problem_routes.py
+
+
+@problem_bp.route("/problems/<string:slug>")
+def problem_detail(slug):
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("SELECT * FROM problems WHERE slug = %s", (slug,))
+    problem = cursor.fetchone()
+
+    if not problem:
+        return "Problem not found", 404
+
+    # --- SỬA TẠI ĐÂY: Đổi case_id thành test_case_id ---
+    cursor.execute(
+        """
+        SELECT test_case_id, input, expected_output 
+        FROM test_cases 
+        WHERE problem_id = %s AND is_sample = TRUE
+        ORDER BY test_case_id ASC
+    """,
+        (problem["problem_id"],),
+    )
+    sample_cases = cursor.fetchall()
+
+    conn.close()
+
+    return render_template(
+        "problem_detail.html", problem=problem, testcases=sample_cases
+    )
