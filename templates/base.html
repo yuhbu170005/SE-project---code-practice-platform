@@ -3,181 +3,127 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>{% block title %}Code Platform{% endblock %}</title>
+    <title>{% block title %}LiteCode{% endblock %}</title>
+
+    <link rel="icon" href="/static/images/logo.png" type="image/png" />
+
+    <!-- Bootstrap CSS -->
     <link
-      rel="icon"
-      href="{{ url_for('static', filename='images/logo.png') }}"
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css"
     />
+
+    <!-- Font Awesome -->
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
     />
+
+    <!-- Custom CSS - SỬA LỖI Ở ĐÂY -->
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/style.css') }}"
+    />
+
     {% block extra_css %}{% endblock %}
-
-    <style>
-      /* CSS CHUNG CHO TOÀN BỘ WEBSITE */
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-        font-family: "Segoe UI", sans-serif;
-      }
-      body {
-        background-color: #f4f6f8;
-        display: flex;
-        flex-direction: column;
-        min-height: 100vh;
-      }
-
-      /* 1. HEADER (NAVBAR) - Nằm cố định ở Base */
-      .navbar {
-        background-color: #ffffff;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        padding: 0 20px;
-        height: 60px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        position: sticky;
-        top: 0;
-        z-index: 1000;
-      }
-
-      .nav-brand {
-        font-size: 1.2rem;
-        font-weight: bold;
-        color: #333;
-        text-decoration: none;
-      }
-      .nav-brand i {
-        color: #764ba2;
-        margin-right: 5px;
-      }
-
-      .nav-links {
-        display: flex;
-        gap: 20px;
-      }
-      .nav-links a {
-        text-decoration: none;
-        color: #555;
-        font-weight: 500;
-        transition: color 0.2s;
-      }
-      .nav-links a:hover {
-        color: #764ba2;
-      }
-      .nav-links a.active {
-        color: #764ba2;
-        font-weight: bold;
-      }
-
-      .btn-nav {
-        padding: 8px 16px;
-        border-radius: 20px;
-        font-size: 0.9rem;
-      }
-      .btn-outline {
-        border: 1px solid #764ba2;
-        color: #764ba2;
-      }
-      .btn-fill {
-        background: #764ba2;
-        color: white;
-      }
-
-      /* 2. MAIN CONTENT - Nơi nhét nội dung con vào */
-      .container {
-        flex: 1; /* Đẩy footer xuống đáy */
-        /* width: 100%; max-width: 1200px; margin: 0 auto; padding: 20px; */
-        /* Lưu ý: Home page có thể muốn full width nên mình bỏ padding ở base đi */
-      }
-
-      /* CSS cho Logo Ảnh */
-      .logo-img {
-        height: 40px; /* Chiều cao cố định (nhỏ hơn navbar 60px) */
-        width: auto; /* Chiều rộng tự co giãn theo tỷ lệ */
-        display: block; /* Để căn chỉnh tốt hơn */
-      }
-
-      /* Nếu bạn muốn logo nằm sát lề hơn hoặc chỉnh vị trí */
-      .nav-brand {
-        display: flex;
-        align-items: center;
-        padding: 0; /* Bỏ padding thừa nếu có */
-      }
-
-      /* 3. FOOTER */
-      footer {
-        background: #333;
-        color: white;
-        text-align: center;
-        padding: 20px;
-        margin-top: auto;
-      }
-      footer p {
-        opacity: 0.7;
-        font-size: 0.9rem;
-      }
-    </style>
   </head>
-  <body>
-    <nav class="navbar">
-      <a href="{{ url_for('main.home') }}" class="nav-brand">
-        <img
-          src="{{ url_for('static', filename='images/logo.png') }}"
-          alt="Logo"
-          class="logo-img"
-        />
-        LiteCode
-      </a>
 
-      <div class="nav-links">
-        <a href="{{ url_for('main.home') }}">Home</a>
-        <a href="{{ url_for('problem.list_problems') }}">Problems</a>
-        <!-- <a href="#">Leaderboard</a> -->
-      </div>
-
-      <div class="nav-auth">
-        {% if session.get('user_id') %}
-
-        <span style="margin-right: 15px; color: #555; font-weight: 500">
-          <i class="fas fa-user-circle"></i> Hello, {{ session.get('username')
-          }}
-        </span>
-
-        <a
-          href="{{ url_for('auth.logout') }}"
-          class="btn-nav btn-outline"
-          style="text-decoration: none; border-color: #dc3545; color: #dc3545"
-        >
-          <i class="fas fa-sign-out-alt"></i> Logout
+  <body class="{% block body_class %}{% endblock %}">
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg bg-white navbar-custom">
+      <div class="container-fluid">
+        <!-- Logo -->
+        <a href="{{ url_for('main.home') }}" class="nav-brand navbar-brand">
+          <img
+            src="/static/images/logo.png"
+            alt="LiteCode Logo"
+            class="logo-img me-2"
+          />
+          LiteCode
         </a>
 
-        {% else %}
-
-        <a
-          href="{{ url_for('auth.view_login') }}"
-          class="btn-nav btn-outline"
-          style="text-decoration: none; margin-right: 10px"
-          >Login</a
+        <!-- Mobile Toggle Button -->
+        <button
+          class="navbar-toggler"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#navbarContent"
         >
-        <a
-          href="{{ url_for('auth.view_signup') }}"
-          class="btn-nav btn-fill"
-          style="text-decoration: none"
-          >Sign Up</a
-        >
+          <span class="navbar-toggler-icon"></span>
+        </button>
 
-        {% endif %}
+        <!-- Nav Content -->
+        <div class="collapse navbar-collapse" id="navbarContent">
+          <!-- Nav Links -->
+          <div class="navbar-nav me-auto nav-links">
+            <a href="{{ url_for('main.home') }}" class="nav-link">Home</a>
+            <a href="{{ url_for('problem.list_problems') }}" class="nav-link"
+              >Problems</a
+            >
+            {% if session.user_id %}
+            <a
+              href="{{ url_for('submission.list_submissions') }}"
+              class="nav-link"
+            >
+              Submissions
+            </a>
+            {% endif %}
+          </div>
+
+          <!-- Auth Section -->
+          <div class="d-flex align-items-center nav-auth">
+            {% if session.user_id %}
+            <span class="me-3 user-info">
+              <i class="fas fa-user-circle"></i> {{ session.username }}
+            </span>
+
+            <a
+              href="{{ url_for('auth.logout') }}"
+              class="btn btn-outline-danger btn-sm"
+            >
+              <i class="fas fa-sign-out-alt"></i> Logout
+            </a>
+            {% else %}
+
+            <a
+              href="{{ url_for('auth.view_login') }}"
+              class="btn btn-outline-primary btn-sm me-2"
+            >
+              Login
+            </a>
+            <a
+              href="{{ url_for('auth.view_signup') }}"
+              class="btn btn-primary btn-sm"
+            >
+              Sign Up
+            </a>
+            {% endif %}
+          </div>
+        </div>
       </div>
     </nav>
 
-    <div class="main-content">{% block content %} {% endblock %}</div>
+    <!-- Main Content -->
+    {% block layout_wrapper %}
+    <div class="container mt-4">{% block content %}{% endblock %}</div>
+    {% endblock %}
 
-    <footer>
-      <p>&copy; 2025 Code Practice Platform. Software Engineering Project.</p>
+    <!-- Footer -->
+    <footer id="main-footer" class="mt-auto py-3 bg-light text-center">
+      <p class="mb-0 text-muted">
+        &copy; 2025 Code Practice Platform. Software Engineering Project.
+      </p>
     </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+
+    <!-- SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <!-- Custom JS - SỬA LỖI Ở ĐÂY -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+
+    {% block extra_js %}{% endblock %}
   </body>
 </html>
