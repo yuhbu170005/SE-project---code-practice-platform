@@ -1,62 +1,160 @@
-<!-- {% extends "base.html" %}
-
-{% block title %}Submission Result - Code Practice Platform{% endblock %}
-
-{% block content %}
-<div style="margin-bottom: 1rem;">
-    <a href="/submissions" style="color: #666; text-decoration: none;">← Back to Submissions</a>
-</div>
-
-<h1 style="margin-bottom: 1.5rem; color: #333;">Submission Result</h1>
-
-<div style="background-color: #f9f9f9; padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem;">
-    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem;">
-        <div>
-            <h3 style="color: #666; font-size: 0.9rem; margin-bottom: 0.5rem;">Submission ID</h3>
-            <p style="font-size: 1.1rem; color: #333;">{{ submission.id }}</p>
-        </div>
-        <div>
-            <h3 style="color: #666; font-size: 0.9rem; margin-bottom: 0.5rem;">Problem</h3>
-            <p style="font-size: 1.1rem;">
-                <a href="/problem/{{ submission.problem_id }}" style="color: #4CAF50; text-decoration: none;">
-                    {{ submission.title }}
-                </a>
-            </p>
-        </div>
-        <div>
-            <h3 style="color: #666; font-size: 0.9rem; margin-bottom: 0.5rem;">Language</h3>
-            <p style="font-size: 1.1rem; color: #333;">{{ submission.language }}</p>
-        </div>
-        <div>
-            <h3 style="color: #666; font-size: 0.9rem; margin-bottom: 0.5rem;">Status</h3>
-            <p>
-                <span style="padding: 0.4rem 1rem; border-radius: 12px; font-size: 1rem;
-                    {% if submission.status == 'Accepted' %}background-color: #d4edda; color: #155724;
-                    {% elif submission.status == 'Pending' %}background-color: #d1ecf1; color: #0c5460;
-                    {% else %}background-color: #f8d7da; color: #721c24;{% endif %}">
-                    {{ submission.status }}
-                </span>
-            </p>
-        </div>
-        <div style="grid-column: span 2;">
-            <h3 style="color: #666; font-size: 0.9rem; margin-bottom: 0.5rem;">Submitted At</h3>
-            <p style="font-size: 1.1rem; color: #333;">{{ submission.submitted_at }}</p>
-        </div>
+{% extends "base.html" %} {% block title %}Submission Detail - LiteCode{%
+endblock %} {% block content %}
+<div class="container mt-5">
+  <div class="row mb-4">
+    <div class="col-md-8">
+      <h2><i class="fas fa-code me-2"></i>Submission Details</h2>
+      <p class="text-muted">
+        Problem: <strong>{{ submission.title }}</strong> | User:
+        <strong>{{ submission.username }}</strong>
+      </p>
     </div>
+    <div class="col-md-4 text-end">
+      {% if submission.status == 'Accepted' %}
+      <h3>
+        <span class="badge bg-success"
+          ><i class="fas fa-check"></i> Accepted</span
+        >
+      </h3>
+      {% elif submission.status == 'Wrong Answer' %}
+      <h3>
+        <span class="badge bg-danger"
+          ><i class="fas fa-times"></i> Wrong Answer</span
+        >
+      </h3>
+      {% elif submission.status == 'Runtime Error' %}
+      <h3>
+        <span class="badge bg-warning text-dark"
+          ><i class="fas fa-exclamation-triangle"></i> Runtime Error</span
+        >
+      </h3>
+      {% elif submission.status == 'Time Limit Exceeded' %}
+      <h3>
+        <span class="badge bg-info"
+          ><i class="fas fa-hourglass-end"></i> Time Limit Exceeded</span
+        >
+      </h3>
+      {% else %}
+      <h3><span class="badge bg-secondary">{{ submission.status }}</span></h3>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Submitted Time -->
+  <div class="alert alert-light border">
+    <small class="text-muted">
+      <i class="fas fa-calendar me-2"></i>Submitted: {{
+      submission.submitted_at.strftime('%Y-%m-%d %H:%M:%S') if
+      submission.submitted_at else 'N/A' }}
+    </small>
+  </div>
+
+  <!-- Code Section -->
+  <div class="card mb-4">
+    <div class="card-header bg-dark text-white">
+      <i class="fas fa-file-code me-2"></i>Submitted Code
+    </div>
+    <div class="card-body p-0">
+      <pre
+        style="margin: 0; padding: 20px; overflow-x: auto"
+      ><code class="language-python">{{ submission.code }}</code></pre>
+    </div>
+  </div>
+
+  <!-- Test Cases Results -->
+  <div class="card">
+    <div class="card-header bg-dark text-white">
+      <i class="fas fa-flask me-2"></i>Test Cases
+    </div>
+    <div class="card-body">
+      {% if test_cases %}
+      <div class="accordion" id="testCasesAccordion">
+        {% for test_case in test_cases %}
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button
+              class="accordion-button {% if loop.index != 1 %}collapsed{% endif %}"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#testCase{{ loop.index }}"
+            >
+              <i class="fas fa-code me-2"></i>Test Case {{ loop.index }} {% if
+              not test_case.is_hidden %}
+              <span class="badge bg-info ms-2">Sample</span>
+              {% else %}
+              <span class="badge bg-secondary ms-2">Hidden</span>
+              {% endif %}
+            </button>
+          </h2>
+          <div
+            id="testCase{{ loop.index }}"
+            class="accordion-collapse collapse {% if loop.index == 1 %}show{% endif %}"
+            data-bs-parent="#testCasesAccordion"
+          >
+            <div class="accordion-body">
+              <div class="row">
+                <div class="col-md-6">
+                  <h6 class="fw-bold">Input:</h6>
+                  <pre
+                    style="
+                      background-color: #f5f5f5;
+                      padding: 10px;
+                      border-radius: 4px;
+                    "
+                  >
+{{ test_case.input }}</pre
+                  >
+                </div>
+                <div class="col-md-6">
+                  <h6 class="fw-bold">Expected Output:</h6>
+                  <pre
+                    style="
+                      background-color: #f5f5f5;
+                      padding: 10px;
+                      border-radius: 4px;
+                    "
+                  >
+{{ test_case.expected_output }}</pre
+                  >
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p class="text-muted">No test cases available.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Back Button -->
+  <div class="mt-4">
+    <a
+      href="{{ url_for('submission.list_submissions') }}"
+      class="btn btn-secondary"
+    >
+      <i class="fas fa-arrow-left me-2"></i>Back to Submissions
+    </a>
+    <a
+      href="{{ url_for('problem.problem_detail', slug=submission.slug) }}"
+      class="btn btn-primary"
+    >
+      <i class="fas fa-arrow-right me-2"></i>Back to Problem
+    </a>
+  </div>
 </div>
 
-<div style="margin-bottom: 2rem;">
-    <h2 style="color: #333; margin-bottom: 1rem;">Submitted Code</h2>
-    <pre style="background-color: #f5f5f5; padding: 1.5rem; border-radius: 8px; overflow-x: auto; 
-                border: 1px solid #ddd; font-family: 'Courier New', monospace; font-size: 0.95rem;">{{ submission.code }}</pre>
-</div>
-
-<div style="display: flex; gap: 1rem; margin-top: 2rem;">
-    <a href="/submit/{{ submission.problem_id }}" class="btn" style="font-size: 1rem; padding: 0.75rem 1.5rem;">
-        Submit Again
-    </a>
-    <a href="/problem/{{ submission.problem_id }}" class="btn btn-secondary" style="font-size: 1rem; padding: 0.75rem 1.5rem;">
-        View Problem
-    </a>
-</div>
-{% endblock %} -->
+{% block extra_css %}
+<style>
+  pre {
+    font-family: "Courier New", monospace;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  .accordion-button:not(.collapsed) {
+    background-color: #e7f1ff;
+  }
+</style>
+{% endblock %} {% endblock %}
