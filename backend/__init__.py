@@ -25,4 +25,7 @@ def create_app():
     # Lưu ý: Không cần set url_prefix='/problems' ở đây 
     # VÌ: Trong file problem_routes.py bạn đã tự viết sẵn chữ /problems rồi.
     app.register_blueprint(problem_bp)
+
+    from backend.routes.submission_routes import submission_bp
+    app.register_blueprint(submission_bp)
     return app
