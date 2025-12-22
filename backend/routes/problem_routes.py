@@ -10,6 +10,7 @@ from flask import (
 from mysql.connector import Error
 from backend.database import get_db_connection
 from backend.utils import admin_required
+from backend.services.problem_service import get_problem_detail_by_slug
 
 # 1. Tạo Blueprint
 problem_bp = Blueprint("problem", __name__)
@@ -357,29 +358,16 @@ def view_problem(id):
 
 @problem_bp.route("/problems/<string:slug>")
 def problem_detail(slug):
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
+    problem, sample_cases, test_cases = get_problem_detail_by_slug(slug)
 
-    cursor.execute("SELECT * FROM problems WHERE slug = %s", (slug,))
-    problem = cursor.fetchone()
-
+    # Xử lý logic hiển thị
     if not problem:
         return "Problem not found", 404
-
-    # --- SỬA TẠI ĐÂY: Đổi case_id thành test_case_id ---
-    cursor.execute(
-        """
-        SELECT test_case_id, input, expected_output 
-        FROM test_cases 
-        WHERE problem_id = %s AND is_sample = TRUE
-        ORDER BY test_case_id ASC
-    """,
-        (problem["problem_id"],),
-    )
-    sample_cases = cursor.fetchall()
-
-    conn.close()
+        # Hoặc dùng: abort(404)
 
     return render_template(
-        "problem_detail.html", problem=problem, testcases=sample_cases
+        "problem_detail.html",
+        problem=problem,
+        sample_cases=sample_cases,
+        test_cases=test_cases,
     )

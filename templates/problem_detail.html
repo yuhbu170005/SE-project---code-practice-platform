@@ -24,7 +24,7 @@ endblock %} {% block body_class %}mode-immersive overflow-hidden{% endblock %}
           {{ problem.description | safe }}
         </div>
 
-        {% for case in testcases %}
+        {% for case in sample_cases %}
         <div class="mb-3">
           <h6 class="fw-bold text-secondary small">
             Example {{ loop.index }}:
@@ -56,10 +56,10 @@ endblock %} {% block body_class %}mode-immersive overflow-hidden{% endblock %}
           id="language-select"
           class="form-select form-select-sm w-auto shadow-none border-0 bg-transparent fw-bold"
         >
-          <option value="Python">Python 3</option>
-          <option value="Java">Java</option>
-          <option value="C++">C++</option>
-          <option value="JavaScript">JavaScript</option>
+          <option value="python">Python 3</option>
+          <option value="java">Java</option>
+          <option value="cpp">C++</option>
+          <option value="javascript">JavaScript</option>
         </select>
       </div>
 
@@ -95,7 +95,7 @@ endblock %} {% block body_class %}mode-immersive overflow-hidden{% endblock %}
 
         <div id="view-testcase" class="p-3 h-100 overflow-auto">
           <div class="d-flex mb-3">
-            {% for case in testcases %}
+            {% for case in test_cases %}
             <button
               class="case-btn btn btn-sm btn-light border me-2 {% if loop.first %}active border-primary text-primary{% endif %}"
               onclick="showCase({{ loop.index0 }})"
@@ -106,7 +106,7 @@ endblock %} {% block body_class %}mode-immersive overflow-hidden{% endblock %}
             {% endfor %}
           </div>
 
-          {% for case in testcases %}
+          {% for case in test_cases %}
           <div
             id="case-content-{{ loop.index0 }}"
             class="{% if not loop.first %}d-none{% endif %}"
@@ -166,7 +166,7 @@ endblock %} {% block body_class %}mode-immersive overflow-hidden{% endblock %}
       window.editor = monaco.editor.create(document.getElementById('monaco-editor'), {
           value: "class Solution:\n    def solve(self, input_str):\n        # Your code here\n        pass",
           language: 'python',
-          theme: 'vs-dark',
+          theme: 'vs-light',
           automaticLayout: true,
           minimap: { enabled: false },
           fontSize: 14,
@@ -174,17 +174,51 @@ endblock %} {% block body_class %}mode-immersive overflow-hidden{% endblock %}
       });
   });
 
+  // 1. Định nghĩa code mẫu cho từng ngôn ngữ
+  const languageTemplates = {
+      'python': "class Solution:\n    def solve(self, input_str):\n        # Your code here\n        pass",
+      'java': "class Solution {\n    public void solve(String input) {\n        // Your code here\n    }\n}",
+      'cpp': "class Solution {\npublic:\n    void solve(string input) {\n        // Your code here\n    }\n};",
+      'javascript': "class Solution {\n    solve(input) {\n        // Your code here\n    }\n}"
+  };
+
+  // 2. Map giữa value của thẻ select và ID ngôn ngữ của Monaco Editor
+  const monacoLanguages = {
+      'python': 'python',
+      'java': 'java',
+      'cpp': 'cpp',
+      'javascript': 'javascript'
+  };
+
+  // 3. Bắt sự kiện khi thay đổi dropdown
+  document.getElementById('language-select').addEventListener('change', function() {
+      const selectedLang = this.value; // Lấy giá trị ví dụ: "C++"
+
+      // Lấy ID ngôn ngữ cho Monaco (ví dụ: "cpp")
+      const monacoMode = monacoLanguages[selectedLang] || 'python';
+
+      // Lấy code mẫu tương ứng
+      const templateCode = languageTemplates[selectedLang] || "";
+
+      // CẬP NHẬT EDITOR:
+      // A. Đổi syntax highlighting (màu sắc code)
+      monaco.editor.setModelLanguage(window.editor.getModel(), monacoMode);
+
+      // B. Đổi nội dung code thành code mẫu mới
+      window.editor.setValue(templateCode);
+  });
   // Run Code
   document.getElementById('btn-run').addEventListener('click', async () => {
       switchResultTab('result');
       outputDiv.innerHTML = '<div class="text-center mt-4 text-primary"><div class="spinner-border spinner-border-sm me-2"></div>Running...</div>';
 
       const code = window.editor.getValue();
+      const language = document.getElementById('language-select').value || 'Python';
       try {
           const res = await fetch('/api/run', {
               method: 'POST',
               headers: {'Content-Type': 'application/json'},
-              body: JSON.stringify({ code: code, problem_id: problemId })
+              body: JSON.stringify({ code: code, problem_id: problemId, language: language })
           });
           const data = await res.json();
 

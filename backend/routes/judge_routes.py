@@ -1,34 +1,12 @@
 from flask import Blueprint, request, jsonify, session
-import sys
-import subprocess
 from backend.database import get_db_connection
 
+# Import hàm chấm bài qua Piston API từ utils
+from backend.utils import run_code_external
+from backend.services.testcase_service import get_public_test_cases, get_all_test_cases
+from backend.services.submission_service import save_submission_to_db
+
 judge_bp = Blueprint("judge", __name__)
-
-
-# --- HÀM HỖ TRỢ CHẠY CODE ---
-def execute_python_code(code, input_data):
-    """
-    Hàm này chạy code Python với input đầu vào và trả về output/lỗi.
-    """
-    try:
-        # Chạy process python, timeout 2 giây để tránh treo máy
-        process = subprocess.run(
-            [sys.executable, "-c", code],
-            input=input_data,
-            text=True,
-            capture_output=True,
-            timeout=2,
-        )
-        return {
-            "success": process.returncode == 0,
-            "output": process.stdout.strip(),  # Xóa khoảng trắng thừa đầu đuôi
-            "error": process.stderr.strip(),
-        }
-    except subprocess.TimeoutExpired:
-        return {"success": False, "error": "Time Limit Exceeded"}
-    except Exception as e:
-        return {"success": False, "error": str(e)}
 
 
 # --- API 1: RUN CODE (Chấm thử - Trả về chi tiết từng case) ---
@@ -37,6 +15,8 @@ def run_code():
     data = request.json
     code = data.get("code")
     problem_id = data.get("problem_id")
+    # Lấy ngôn ngữ (nếu frontend không gửi thì mặc định Python)
+    language = data.get("language", "Python")
 
     if not code or not problem_id:
         return (
@@ -49,21 +29,7 @@ def run_code():
             400,
         )
 
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
-
-    # [SỬA QUAN TRỌNG]: Dùng đúng tên cột 'test_case_id'
-    cursor.execute(
-        """
-        SELECT test_case_id, input, expected_output, is_hidden 
-        FROM test_cases 
-        WHERE problem_id = %s AND is_hidden = FALSE
-    """,
-        (problem_id,),
-    )
-
-    test_cases = cursor.fetchall()
-    conn.close()
+    test_cases = get_public_test_cases(problem_id)
 
     if not test_cases:
         return jsonify(
@@ -74,29 +40,31 @@ def run_code():
     final_status = "Accepted"
 
     for i, case in enumerate(test_cases):
-        # Chạy code
-        res = execute_python_code(code, case["input"])
+        # GỌI HÀM CHẤM BÀI TỪ UTILS (PISTON)
+        res = run_code_external(code, language, case["input"])
 
         result_item = {"case": i + 1, "status": "Passed"}
 
-        # 1. Nếu code bị lỗi (Runtime/Timeout)
+        # Chuẩn hóa output để so sánh (xóa khoảng trắng thừa và đồng bộ xuống dòng)
+        actual_output = res.get("output", "").replace("\r\n", "\n").strip()
+        expected_output = case["expected_output"].replace("\r\n", "\n").strip()
+
+        # 1. Nếu code bị lỗi (Compile Error, Runtime Error)
         if not res["success"]:
-            if res["error"] == "Time Limit Exceeded":
-                status = "Time Limit Exceeded"
-            else:
-                status = "Runtime Error"
+            # Lấy status từ utils trả về (VD: Runtime Error)
+            status = res.get("status_label", "Runtime Error")
 
             result_item["status"] = status
             result_item["error"] = res["error"]
-            final_status = status  # Cập nhật trạng thái tổng
+            final_status = status
 
         # 2. Nếu code chạy xong nhưng ra kết quả sai
-        elif res["output"] != case["expected_output"].strip():
+        elif actual_output != expected_output:
             status = "Wrong Answer"
             result_item["status"] = status
             result_item["input"] = case["input"]
-            result_item["expected"] = case["expected_output"]
-            result_item["actual"] = res["output"]
+            result_item["expected"] = expected_output
+            result_item["actual"] = actual_output
             final_status = status
 
         results.append(result_item)
@@ -107,8 +75,7 @@ def run_code():
 # --- API 2: SUBMIT CODE (Chấm chính thức - Lưu kết quả vào DB) ---
 @judge_bp.route("/api/submit", methods=["POST"])
 def submit_code():
-    # Lấy user từ session (fallback = 1 nếu chưa login)
-    user_id = session.get("user_id", 1)
+    user_id = session.get("user_id", 1)  # Mặc định 1 nếu chưa login
 
     data = request.get_json(silent=True) or request.form
     code = data.get("code")
@@ -121,77 +88,42 @@ def submit_code():
             400,
         )
 
-    conn = get_db_connection()
-    if not conn:
-        return (
-            jsonify({"status": "error", "message": "Database connection error."}),
-            500,
-        )
-
-    cursor = conn.cursor(dictionary=True)
-
-    try:
-        cursor.execute(
-            """
-            SELECT input, expected_output 
-            FROM test_cases 
-            WHERE problem_id = %s 
-            ORDER BY test_case_id ASC
-            """,
-            (problem_id,),
-        )
-        test_cases = cursor.fetchall()
-    except Exception as e:
-        try:
-            cursor.close()
-            conn.close()
-        except Exception:
-            pass
-        return (
-            jsonify(
-                {"status": "error", "message": f"DB error when reading test cases: {e}"}
-            ),
-            500,
-        )
+    test_cases = get_all_test_cases(problem_id)
 
     final_status = "Accepted"
     failed_case_index = 0
 
-    for i, case in enumerate(test_cases):
-        res = execute_python_code(code, case["input"])
+    # Biến lưu lỗi để debug (nếu bạn muốn lưu vào DB sau này)
+    error_message_log = ""
 
+    for i, case in enumerate(test_cases):
+        # GỌI PISTON API
+        res = run_code_external(code, language, case["input"])
+
+        actual_output = res.get("output", "").replace("\r\n", "\n").strip()
+        expected_output = case["expected_output"].replace("\r\n", "\n").strip()
+
+        # Case lỗi Runtime/Compile
         if not res["success"]:
-            final_status = (
-                "Time Limit Exceeded"
-                if res["error"] == "Time Limit Exceeded"
-                else "Runtime Error"
-            )
+            final_status = res.get("status_label", "Runtime Error")
+            error_message_log = res.get("error", "")
             failed_case_index = i + 1
             break
 
-        if res["output"] != case["expected_output"].strip():
+        # Case sai kết quả
+        if actual_output != expected_output:
             final_status = "Wrong Answer"
             failed_case_index = i + 1
             break
 
-    # Lưu submission (bổ sung language)
-    try:
-        cursor.execute(
-            "INSERT INTO submissions (user_id, problem_id, code, language, status) VALUES (%s, %s, %s, %s, %s)",
-            (user_id, problem_id, code, language, final_status),
-        )
-        conn.commit()
-    except Exception as e:
-        conn.rollback()
-        cursor.close()
-        conn.close()
+    save_success = save_submission_to_db(
+        user_id, problem_id, code, language, final_status, error_message_log
+    )
+    if not save_success:
         return (
-            jsonify({"status": "error", "message": f"Failed to save submission: {e}"}),
+            jsonify({"status": "error", "message": "Lỗi khi lưu kết quả vào DB"}),
             500,
         )
-
-    cursor.close()
-    conn.close()
 
     return jsonify(
         {
