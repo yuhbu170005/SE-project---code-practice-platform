@@ -1,8 +1,13 @@
 # config.py
+import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 DB_CONFIG = {
-    'host': 'localhost',
-    'user': 'root',           # Tên đăng nhập MySQL (thường là root)
-    'password': 'admin', # <--- NHẬP PASS MYSQL CỦA MÁY BẠN VÀO ĐÂY
-    'database': 'coding_practice_system'      # Phải trùng tên với database vừa tạo ở Bước 1
+    "host": os.getenv("DB_HOST", "localhost"),
+    "user": os.getenv("DB_USER", "root"),
+    "password": os.getenv("DB_PASSWORD", ""),
+    "database": os.getenv("DB_NAME", "coding_practice_system"),
 }

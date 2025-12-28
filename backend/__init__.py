@@ -1,13 +1,19 @@
 from flask import Flask
 from flask_cors import CORS
+import os
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 
 def create_app():
     # DÒNG 1: Khởi tạo ứng dụng Flask
     app = Flask(__name__, template_folder="../templates", static_folder="../static")
 
-    # DÒNG 2: Cấu hình khóa bí mật
-    app.secret_key = "7d902583e308e5998d255bc261770f4f6faf2a53b71ced73b7c0be67054e0390"
+    # DÒNG 2: Cấu hình khóa bí mật từ environment variable
+    app.secret_key = os.getenv("SECRET_KEY", "dev-secret-key-change-in-production")
+    app.config["DEBUG"] = os.getenv("DEBUG", "False").lower() == "true"
 
     # DÒNG 3: Cấu hình CORS
     CORS(app)

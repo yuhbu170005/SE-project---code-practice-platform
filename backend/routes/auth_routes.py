@@ -7,13 +7,14 @@ from flask import (
     session,
     url_for,
 )
-from werkzeug.security import generate_password_hash, check_password_hash
-from backend.database import get_db_connection
-import re
+from backend.services.auth_service import (
+    check_user_exists,
+    create_user,
+    authenticate_user,
+)
+from backend.validators import validate_signup_data
 
 auth_bp = Blueprint("auth", __name__)
-
-EMAIL_RE = re.compile(r"^[^@]+@[^@]+\.[^@]+$")
 
 
 @auth_bp.route("/login", methods=["GET"])
@@ -30,61 +31,46 @@ def view_signup():
 def api_signup():
     data = request.get_json(silent=True) or request.form
 
-    # Trim inputs
+    # Get and trim inputs
     username = (data.get("username") or "").strip()
-    email = (data.get("email") or "").strip()
+    email = (data.get("email") or "").strip().lower()
     password = data.get("password") or ""
     full_name = (data.get("full_name") or "").strip()
 
-    # Basic validation
-    if not username or not password or not email:
-        return jsonify({"success": False, "message": "Missing required fields!"}), 400
+    # Comprehensive validation
+    is_valid, errors = validate_signup_data(username, email, password, full_name)
 
-    if not EMAIL_RE.match(email):
-        return jsonify({"success": False, "message": "Invalid email format."}), 400
+    if not is_valid:
+        # Return first error for simplicity, or all errors
+        first_error = next(iter(errors.values()))
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "message": first_error,
+                    "errors": errors,  # Frontend can show all errors if needed
+                }
+            ),
+            400,
+        )
 
-    conn = get_db_connection()
-    if not conn:
+    # Check if user exists
+    user_exists = check_user_exists(username, email)
+
+    if user_exists is None:
         return jsonify({"success": False, "message": "Database connection error."}), 500
 
-    cursor = None
-    try:
-        cursor = conn.cursor(dictionary=True)
-
-        # Check username or email already exists
-        cursor.execute(
-            "SELECT user_id FROM users WHERE username = %s OR email = %s",
-            (username, email),
+    if user_exists:
+        return (
+            jsonify({"success": False, "message": "Username or email already exists."}),
+            409,
         )
-        if cursor.fetchone():
-            return (
-                jsonify(
-                    {"success": False, "message": "Username or email already exists."}
-                ),
-                409,
-            )
 
-        # Hash password and insert
-        hashed_pw = generate_password_hash(password)
-        cursor.execute(
-            "INSERT INTO users (username, email, password_hash, full_name) VALUES (%s, %s, %s, %s)",
-            (username, email, hashed_pw, full_name),
-        )
-        conn.commit()
-
+    # Create user
+    if create_user(username, email, password, full_name):
         return jsonify({"success": True, "message": "Registration successful!"}), 201
-
-    except Exception as e:
-        # Optionally log e
-        try:
-            conn.rollback()
-        except Exception:
-            pass
-        return jsonify({"success": False, "message": str(e)}), 500
-    finally:
-        if cursor:
-            cursor.close()
-        conn.close()
+    else:
+        return jsonify({"success": False, "message": "Failed to create user."}), 500
 
 
 @auth_bp.route("/api/login", methods=["POST"])
@@ -101,52 +87,34 @@ def api_login():
             400,
         )
 
-    conn = get_db_connection()
-    if not conn:
-        return jsonify({"success": False, "message": "Database connection error."}), 500
+    # Authenticate user
+    user = authenticate_user(username_or_email, password)
 
-    cursor = None
-    try:
-        cursor = conn.cursor(dictionary=True)
-        cursor.execute(
-            "SELECT user_id, username, password_hash, role FROM users WHERE username = %s OR email = %s",
-            (username_or_email, username_or_email),
+    if user:
+        session["user_id"] = user["user_id"]
+        session["username"] = user["username"]
+        session["role"] = user["role"]
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "message": "Login successful.",
+                    "user": {
+                        "username": user["username"],
+                        "id": user["user_id"],
+                        "role": user["role"],
+                    },
+                }
+            ),
+            200,
         )
-        user = cursor.fetchone()
-
-        if user and check_password_hash(user["password_hash"], password):
-            session["user_id"] = user["user_id"]
-            session["username"] = user["username"]
-            session["role"] = user.get("role", "user")
-            print("DEBUG SESSION:", dict(session))  # <-- THÊM DÒNG NÀY
-            return (
-                jsonify(
-                    {
-                        "success": True,
-                        "message": "Login successful.",
-                        "user": {
-                            "username": user["username"],
-                            "id": user["user_id"],
-                            "role": session["role"],
-                        },
-                    }
-                ),
-                200,
-            )
-        else:
-            return (
-                jsonify(
-                    {"success": False, "message": "Invalid username/email or password."}
-                ),
-                401,
-            )
-
-    except Exception as e:
-        return jsonify({"success": False, "message": str(e)}), 500
-    finally:
-        if cursor:
-            cursor.close()
-        conn.close()
+    else:
+        return (
+            jsonify(
+                {"success": False, "message": "Invalid username/email or password."}
+            ),
+            401,
+        )
 
 
 @auth_bp.route("/logout")
