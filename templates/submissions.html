@@ -69,17 +69,14 @@
   <div class="alert alert-info text-center">
     <i class="fas fa-inbox me-2"></i>
     No submissions yet.
-    <a href="{{ url_for('problem.list_problems') }}"
-      >Start solving problems!</a
-    >
+    <a href="{{ url_for('problem.list_problems') }}">Start solving problems!</a>
   </div>
   {% endif %}
 </div>
-
-{% block extra_css %}
+{% endblock %} {% block extra_css %}
 <style>
   .table-hover tbody tr:hover {
     background-color: #f5f5f5;
   }
 </style>
-{% endblock %} {% endblock %}
+{% endblock %}

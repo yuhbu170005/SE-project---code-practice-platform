@@ -2,26 +2,53 @@ from backend.database import get_db_connection
 
 
 def save_submission_to_db(
-    user_id, problem_id, code, language, status, error_message=""
+    user_id,
+    problem_id,
+    code,
+    language,
+    status,
+    test_cases_passed=0,
+    total_test_cases=0,
+    execution_time=None,
+    memory_used=None,
 ):
     """Save submission result to database"""
     conn = get_db_connection()
+    if not conn:
+        return False
+
     cursor = conn.cursor()
     try:
         cursor.execute(
             """
-            INSERT INTO submissions (user_id, problem_id, code, language, status, error_message) 
-            VALUES (%s, %s, %s, %s, %s, %s)
+            INSERT INTO submissions (
+                user_id, problem_id, code, language, status, 
+                test_cases_passed, total_test_cases,
+                execution_time, memory_used
+            ) 
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
         """,
-            (user_id, problem_id, code, language, status, error_message),
+            (
+                user_id,
+                problem_id,
+                code,
+                language,
+                status,
+                test_cases_passed,
+                total_test_cases,
+                execution_time,
+                memory_used,
+            ),
         )
         conn.commit()
-        return True
+        submission_id = cursor.lastrowid
+        return True, submission_id
     except Exception as e:
         print(f"Error saving submission: {e}")
         conn.rollback()
-        return False
+        return False, None
     finally:
+        cursor.close()
         conn.close()
 
 

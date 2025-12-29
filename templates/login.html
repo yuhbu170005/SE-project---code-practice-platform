@@ -77,7 +77,7 @@ block content %}
         const result = await res.json();
 
         if (result.success) {
-          window.location.href = "/problems";
+          window.location.href = "/";
         } else {
           document.getElementById("alert-box").innerHTML = `
                 <div class="alert alert-danger">${result.message}</div>

@@ -14,19 +14,31 @@ def get_problem_detail_by_slug(slug):
         if not problem:
             return None, None, None
 
-        # Get sample test cases (is_hidden = FALSE)
+        # Get sample test cases for display in description (Examples)
         cursor.execute(
             """
             SELECT test_case_id, input, expected_output 
             FROM test_cases 
-            WHERE problem_id = %s AND is_hidden = FALSE
+            WHERE problem_id = %s AND is_sample = TRUE
+            ORDER BY test_case_id ASC
+            """,
+            (problem["problem_id"],),
+        )
+        sample_cases = cursor.fetchall()
+
+        # Get public test cases for "Test Cases" tab (non-sample, visible)
+        cursor.execute(
+            """
+            SELECT test_case_id, input, expected_output 
+            FROM test_cases 
+            WHERE problem_id = %s AND is_hidden = FALSE AND is_sample = FALSE
             ORDER BY test_case_id ASC
             """,
             (problem["problem_id"],),
         )
         test_cases = cursor.fetchall()
 
-        return problem, test_cases, test_cases
+        return problem, sample_cases, test_cases
 
     finally:
         if conn.is_connected():

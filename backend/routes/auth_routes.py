@@ -120,5 +120,4 @@ def api_login():
 @auth_bp.route("/logout")
 def logout():
     session.clear()
-    session.pop("role", None)
     return redirect(url_for("main.home"))

@@ -2,7 +2,7 @@ from backend.database import get_db_connection
 
 
 def get_public_test_cases(problem_id):
-    """Lấy test case công khai để người dùng chạy thử (Run Code)"""
+    """Lấy test case công khai để người dùng chạy thử (Run Code) - không bao gồm sample cases"""
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
     try:
@@ -10,7 +10,7 @@ def get_public_test_cases(problem_id):
             """
             SELECT input, expected_output 
             FROM test_cases 
-            WHERE problem_id = %s AND is_hidden = FALSE
+            WHERE problem_id = %s AND is_hidden = FALSE AND is_sample = FALSE
         """,
             (problem_id,),
         )
@@ -19,6 +19,7 @@ def get_public_test_cases(problem_id):
         print(f"Error fetching public test cases: {e}")
         return []
     finally:
+        cursor.close()
         conn.close()
 
 
@@ -41,4 +42,5 @@ def get_all_test_cases(problem_id):
         print(f"Error fetching all test cases: {e}")
         return []
     finally:
+        cursor.close()
         conn.close()
