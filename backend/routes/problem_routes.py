@@ -17,7 +17,12 @@ from backend.services.problem_service import (
     get_problem_by_id,
 )
 from backend.services.tag_service import get_all_tags, get_tag_names
-from backend.services.testcase_service import get_public_test_cases
+from backend.services.testcase_service import (
+    get_public_test_cases,
+    save_test_cases,
+    get_all_test_cases_with_flags,
+)
+import json
 
 problem_bp = Blueprint("problem", __name__)
 
@@ -83,22 +88,51 @@ def list_problems():
 @admin_required
 def create():
     if request.method == "POST":
-        title = request.form.get("title")
-        slug = request.form.get("slug")
-        description = request.form.get("description")
-        difficulty = request.form.get("difficulty")
+        title = request.form.get("title", "").strip()
+        slug = request.form.get("slug", "").strip()
+        description = request.form.get("description", "").strip()
+        difficulty = request.form.get("difficulty", "")
         time_limit = request.form.get("time_limit", 1000)
         memory_limit = request.form.get("memory_limit", 256)
         tags = request.form.getlist("tags")
+        test_cases_json = request.form.get("test_cases_json")
+
+        # Get new fields (optional)
+        starter_code = request.form.get("starter_code") or None
+        wrapper_template = request.form.get("wrapper_template") or None
+        function_name = request.form.get("function_name") or None
 
         success, result = create_problem(
-            title, slug, description, difficulty, time_limit, memory_limit, tags
+            title,
+            slug,
+            description,
+            difficulty,
+            time_limit,
+            memory_limit,
+            tags,
+            starter_code,
+            wrapper_template,
+            function_name,
         )
 
         if success:
+            problem_id = result
+
+            # Handle test cases if provided
+            if test_cases_json:
+                try:
+                    test_cases = json.loads(test_cases_json)
+                    save_test_cases(problem_id, test_cases)
+                except Exception as e:
+                    print(f"Error saving test cases: {e}")
+
             return redirect(url_for("problem.list_problems"))
         else:
-            return render_template("create.html", error=f"Error: {result}"), 500
+            tags = get_all_tags()
+            return (
+                render_template("create.html", error=f"Error: {result}", tags=tags),
+                500,
+            )
 
     # GET request - show form with tags
     tags = get_all_tags()
@@ -116,12 +150,36 @@ def edit(id):
         time_limit = request.form.get("time_limit", 1000)
         memory_limit = request.form.get("memory_limit", 256)
         tags = request.form.getlist("tags")
+        test_cases_json = request.form.get("test_cases_json")
+
+        # Get new fields (optional)
+        starter_code = request.form.get("starter_code") or None
+        wrapper_template = request.form.get("wrapper_template") or None
+        function_name = request.form.get("function_name") or None
 
         success = update_problem(
-            id, title, slug, description, difficulty, time_limit, memory_limit, tags
+            id,
+            title,
+            slug,
+            description,
+            difficulty,
+            time_limit,
+            memory_limit,
+            tags,
+            starter_code,
+            wrapper_template,
+            function_name,
         )
 
         if success:
+            # Handle test cases if provided
+            if test_cases_json:
+                try:
+                    test_cases = json.loads(test_cases_json)
+                    save_test_cases(id, test_cases)
+                except Exception as e:
+                    print(f"Error saving test cases: {e}")
+
             return redirect(url_for("problem.list_problems"))
         else:
             return (
@@ -141,8 +199,15 @@ def edit(id):
     tags = get_all_tags()
     selected_tags = str(problem["tag_ids"]).split(",") if problem["tag_ids"] else []
 
+    # Get existing test cases
+    test_cases = get_all_test_cases_with_flags(id)
+
     return render_template(
-        "edit.html", problem=problem, tags=tags, selected_tags=selected_tags
+        "edit.html",
+        problem=problem,
+        tags=tags,
+        selected_tags=selected_tags,
+        test_cases=test_cases,
     )
 
 
@@ -170,9 +235,29 @@ def problem_detail(slug):
         return "Problem not found", 404
         # Hoặc dùng: abort(404)
 
+    # Pass starter_code to template (fallback to default if null)
+    starter_code = problem.get("starter_code")
+
+    # Check if starter_code is JSON (multi-language support)
+    if starter_code and starter_code.strip().startswith("{"):
+        try:
+            import json
+
+            starter_codes = json.loads(starter_code)
+            # Convert to JavaScript object for frontend
+            starter_code = starter_codes
+        except (json.JSONDecodeError, ValueError):
+            # Not JSON, use as-is
+            pass
+
+    # Fallback to default Python code if no starter_code
+    if not starter_code:
+        starter_code = "class Solution:\n    def solve(self, input_str):\n        # Your code here\n        pass"
+
     return render_template(
         "problem_detail.html",
         problem=problem,
         sample_cases=sample_cases,
         test_cases=test_cases,
+        starter_code=starter_code,
     )

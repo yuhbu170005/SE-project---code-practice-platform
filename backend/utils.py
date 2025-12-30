@@ -62,6 +62,41 @@ def estimate_memory_usage(language, code_length, execution_time_ms):
     return memory
 
 
+def wrap_user_code(user_code, wrapper_template, language):
+    """
+    Wrap user's Solution class with input/output handling template
+
+    Args:
+        user_code: User's code (class Solution only)
+        wrapper_template: Template string or JSON object with language keys
+        language: Programming language
+
+    Returns:
+        Complete executable code
+    """
+    if not wrapper_template:
+        # No wrapper - return user code as-is (backward compatibility)
+        return user_code
+
+    # Check if template is JSON (multi-language support)
+    if wrapper_template.strip().startswith("{"):
+        try:
+            import json
+
+            templates = json.loads(wrapper_template)
+            # Get template for specific language (fallback to python)
+            wrapper_template = templates.get(
+                language.lower(), templates.get("python", user_code)
+            )
+        except (json.JSONDecodeError, ValueError):
+            # Not valid JSON, use as-is
+            pass
+
+    # Replace placeholder with user code
+    complete_code = wrapper_template.replace("{USER_CODE}", user_code)
+    return complete_code
+
+
 def run_code_external(code, language, input_data):
     """
     Original Piston API implementation (fallback)

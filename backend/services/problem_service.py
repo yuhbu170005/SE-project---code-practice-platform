@@ -1,4 +1,5 @@
 from backend.database import get_db_connection
+import markdown
 
 
 def get_problem_detail_by_slug(slug):
@@ -13,6 +14,11 @@ def get_problem_detail_by_slug(slug):
 
         if not problem:
             return None, None, None
+
+        # Convert markdown description to HTML
+        if problem.get("description"):
+            md = markdown.Markdown(extensions=["extra", "codehilite", "fenced_code"])
+            problem["description"] = md.convert(problem["description"])
 
         # Get sample test cases for display in description (Examples)
         cursor.execute(
@@ -149,9 +155,18 @@ def get_problem_by_id(problem_id):
 
 
 def create_problem(
-    title, slug, description, difficulty, time_limit, memory_limit, tags
+    title,
+    slug,
+    description,
+    difficulty,
+    time_limit,
+    memory_limit,
+    tags,
+    starter_code=None,
+    wrapper_template=None,
+    function_name=None,
 ):
-    """Create a new problem with tags"""
+    """Create a new problem with tags and code templates"""
     conn = get_db_connection()
     if not conn:
         return False, "Database connection error"
@@ -159,9 +174,20 @@ def create_problem(
     try:
         cursor = conn.cursor()
         cursor.execute(
-            """INSERT INTO problems (title, slug, description, difficulty, time_limit, memory_limit) 
-               VALUES (%s, %s, %s, %s, %s, %s)""",
-            (title, slug, description, difficulty, time_limit, memory_limit),
+            """INSERT INTO problems (title, slug, description, difficulty, time_limit, memory_limit,
+                                     starter_code, wrapper_template, function_name) 
+               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)""",
+            (
+                title,
+                slug,
+                description,
+                difficulty,
+                time_limit,
+                memory_limit,
+                starter_code,
+                wrapper_template,
+                function_name,
+            ),
         )
         problem_id = cursor.lastrowid
 
@@ -184,9 +210,19 @@ def create_problem(
 
 
 def update_problem(
-    problem_id, title, slug, description, difficulty, time_limit, memory_limit, tags
+    problem_id,
+    title,
+    slug,
+    description,
+    difficulty,
+    time_limit,
+    memory_limit,
+    tags,
+    starter_code=None,
+    wrapper_template=None,
+    function_name=None,
 ):
-    """Update existing problem"""
+    """Update existing problem with code templates"""
     conn = get_db_connection()
     if not conn:
         return False
@@ -195,7 +231,9 @@ def update_problem(
         cursor = conn.cursor()
         cursor.execute(
             """UPDATE problems SET title=%s, slug=%s, description=%s, 
-               difficulty=%s, time_limit=%s, memory_limit=%s WHERE problem_id=%s""",
+               difficulty=%s, time_limit=%s, memory_limit=%s,
+               starter_code=%s, wrapper_template=%s, function_name=%s
+               WHERE problem_id=%s""",
             (
                 title,
                 slug,
@@ -203,6 +241,9 @@ def update_problem(
                 difficulty,
                 time_limit,
                 memory_limit,
+                starter_code,
+                wrapper_template,
+                function_name,
                 problem_id,
             ),
         )

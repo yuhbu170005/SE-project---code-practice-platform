@@ -12,7 +12,10 @@ endblock %} {% block body_class %}mode-immersive overflow-hidden{% endblock %}
           >{{ problem.difficulty }}</span
         >
 
-        <div class="mb-4" style="line-height: 1.6; color: #333">
+        <div
+          class="mb-4 markdown-content"
+          style="line-height: 1.6; color: #333"
+        >
           {{ problem.description | safe }}
         </div>
 
@@ -155,8 +158,23 @@ endblock %} {% block body_class %}mode-immersive overflow-hidden{% endblock %}
   // Monaco
   require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.36.1/min/vs' }});
   require(['vs/editor/editor.main'], function() {
+      // Load starter code from backend (can be string or object)
+      const starterCodeData = {{ starter_code | tojson | safe }};
+
+      // Check if it's multi-language object or single string
+      let initialCode = "";
+      if (typeof starterCodeData === 'object' && starterCodeData !== null) {
+          // Multi-language: use python as default
+          initialCode = starterCodeData['python'] || "class Solution:\n    def solve(self, input_str):\n        pass";
+          window.starterCodes = starterCodeData; // Store for language switching
+      } else {
+          // Single string
+          initialCode = starterCodeData || "class Solution:\n    def solve(self, input_str):\n        pass";
+          window.starterCodes = null;
+      }
+
       window.editor = monaco.editor.create(document.getElementById('monaco-editor'), {
-          value: "class Solution:\n    def solve(self, input_str):\n        # Your code here\n        pass",
+          value: initialCode,
           language: 'python',
           theme: 'vs-light',
           automaticLayout: true,
@@ -166,15 +184,7 @@ endblock %} {% block body_class %}mode-immersive overflow-hidden{% endblock %}
       });
   });
 
-  // 1. Định nghĩa code mẫu cho từng ngôn ngữ
-  const languageTemplates = {
-      'python': "class Solution:\n    def solve(self, input_str):\n        # Your code here\n        pass",
-      'java': "class Solution {\n    public void solve(String input) {\n        // Your code here\n    }\n}",
-      'cpp': "class Solution {\npublic:\n    void solve(string input) {\n        // Your code here\n    }\n};",
-      'javascript': "class Solution {\n    solve(input) {\n        // Your code here\n    }\n}"
-  };
-
-  // 2. Map giữa value của thẻ select và ID ngôn ngữ của Monaco Editor
+  // Map giữa value của thẻ select và ID ngôn ngữ của Monaco Editor
   const monacoLanguages = {
       'python': 'python',
       'java': 'java',
@@ -182,15 +192,28 @@ endblock %} {% block body_class %}mode-immersive overflow-hidden{% endblock %}
       'javascript': 'javascript'
   };
 
-  // 3. Bắt sự kiện khi thay đổi dropdown
-  document.getElementById('language-select').addEventListener('change', function() {
-      const selectedLang = this.value; // Lấy giá trị ví dụ: "C++"
+  // Fallback templates nếu không có trong database
+  const defaultTemplates = {
+      'python': "class Solution:\n    def solve(self, input_str):\n        # Your code here\n        pass",
+      'java': "class Solution {\n    public void solve(String input) {\n        // Your code here\n    }\n}",
+      'cpp': "class Solution {\npublic:\n    void solve(string input) {\n        // Your code here\n    }\n};",
+      'javascript': "class Solution {\n    solve(input) {\n        // Your code here\n    }\n}"
+  };
 
-      // Lấy ID ngôn ngữ cho Monaco (ví dụ: "cpp")
+  // Bắt sự kiện khi thay đổi dropdown
+  document.getElementById('language-select').addEventListener('change', function() {
+      const selectedLang = this.value;
+
+      // Lấy ID ngôn ngữ cho Monaco
       const monacoMode = monacoLanguages[selectedLang] || 'python';
 
-      // Lấy code mẫu tương ứng
-      const templateCode = languageTemplates[selectedLang] || "";
+      // Lấy code mẫu: ưu tiên từ database, fallback về default
+      let templateCode = "";
+      if (window.starterCodes && window.starterCodes[selectedLang]) {
+          templateCode = window.starterCodes[selectedLang];
+      } else {
+          templateCode = defaultTemplates[selectedLang] || "";
+      }
 
       // CẬP NHẬT EDITOR:
       // A. Đổi syntax highlighting (màu sắc code)

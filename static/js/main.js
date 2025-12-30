@@ -28,9 +28,9 @@ function switchTab(tabName) {
 }
 
 // Bạn có thể thêm các logic chung khác ở đây
-// Ví dụ: Tự động tắt Alert sau 3 giây
+// Ví dụ: Tự động tắt Alert sau 5 giây (chỉ các alert có class alert-dismissible)
 document.addEventListener("DOMContentLoaded", () => {
-  const alerts = document.querySelectorAll(".alert");
+  const alerts = document.querySelectorAll(".alert.alert-dismissible");
   if (alerts.length > 0) {
     setTimeout(() => {
       alerts.forEach((el) => (el.style.display = "none"));

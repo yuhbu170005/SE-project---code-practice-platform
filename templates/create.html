@@ -1,4 +1,4 @@
-<!-- {% extends "base.html" %} {% block title %}Create Problem - Code Practice{%
+{% extends "base.html" %} {% block title %}Create Problem - Code Practice{%
 endblock %} {% block extra_css %}
 <style>
   /* 1. Layout căn giữa */
@@ -181,6 +181,7 @@ endblock %} {% block extra_css %}
           name="title"
           class="form-control"
           placeholder="Ex: Two Sum"
+          value="{{ form_data.title if form_data else '' }}"
           required
         />
       </div>
@@ -267,6 +268,134 @@ endblock %} {% block extra_css %}
         </div>
       </div>
 
+      <div class="form-group">
+        <label class="form-label" for="function_name">Function Name</label>
+        <input
+          type="text"
+          id="function_name"
+          name="function_name"
+          class="form-control"
+          placeholder="Ex: twoSum, trap"
+        />
+        <div style="margin-top: 8px; font-size: 12px; color: #888">
+          * Optional: The function name users need to implement
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="starter_code"
+          >Starter Code (JSON format)</label
+        >
+        <textarea
+          id="starter_code"
+          name="starter_code"
+          class="form-control"
+          rows="6"
+          placeholder='{"python": "class Solution:\n    def twoSum(self, nums, target):\n        pass", "cpp": "class Solution {\npublic:\n    vector<int> twoSum(vector<int>& nums, int target) {\n        \n    }\n};"}'
+          style="font-family: 'Consolas', 'Monaco', monospace; font-size: 13px"
+        ></textarea>
+        <div style="margin-top: 8px; font-size: 12px; color: #888">
+          * Optional: Multi-language starter code. Format: {"python": "...",
+          "cpp": "...", "java": "...", "javascript": "..."}
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="wrapper_template"
+          >Wrapper Template (JSON format)</label
+        >
+        <textarea
+          id="wrapper_template"
+          name="wrapper_template"
+          class="form-control"
+          rows="8"
+          placeholder='{"python": "import json\nimport sys\n\n{USER_CODE}\n\nif __name__ == \"__main__\":\n    ...", "cpp": "#include <iostream>\n...\n{USER_CODE}\n..."}'
+          style="font-family: 'Consolas', 'Monaco', monospace; font-size: 13px"
+        ></textarea>
+        <div style="margin-top: 8px; font-size: 12px; color: #888">
+          * Optional: Code execution wrapper. Use {USER_CODE} as placeholder.
+        </div>
+      </div>
+
+      <!-- Test Cases Section -->
+      <div class="form-group">
+        <label class="form-label">Test Cases</label>
+        <div
+          style="
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            background: #fafafa;
+          "
+        >
+          <div id="test-cases-container"></div>
+          <div
+            style="
+              margin-bottom: 15px;
+              padding-top: 10px;
+              border-top: 1px solid #ddd;
+            "
+          >
+            <button
+              type="button"
+              class="btn btn-sm btn-outline-primary"
+              onclick="addTestCase()"
+            >
+              <i class="fas fa-plus"></i> Add Test Case
+            </button>
+            <button
+              type="button"
+              class="btn btn-sm btn-outline-info"
+              onclick="toggleJsonImport()"
+              style="margin-left: 10px"
+            >
+              <i class="fas fa-upload"></i> Import from JSON
+            </button>
+          </div>
+          <div
+            id="json-import-section"
+            style="
+              display: none;
+              margin-top: 15px;
+              padding-top: 15px;
+              border-top: 1px solid #ddd;
+            "
+          >
+            <label style="font-size: 13px; font-weight: 600; color: #555"
+              >Paste JSON array:</label
+            >
+            <textarea
+              id="json-import-textarea"
+              class="form-control"
+              rows="6"
+              placeholder='[{"input": "test input", "expected_output": "expected output", "is_sample": false, "is_hidden": true}]'
+              style="font-family: monospace; font-size: 12px"
+            ></textarea>
+            <div style="margin-top: 10px; display: flex; gap: 10px">
+              <button
+                type="button"
+                class="btn btn-sm btn-success"
+                onclick="importTestCasesFromJson()"
+              >
+                <i class="fas fa-check"></i> Import
+              </button>
+              <button
+                type="button"
+                class="btn btn-sm btn-secondary"
+                onclick="toggleJsonImport()"
+              >
+                Cancel
+              </button>
+            </div>
+            <div
+              id="import-message"
+              style="margin-top: 10px; font-size: 12px"
+            ></div>
+          </div>
+        </div>
+        <input type="hidden" id="test_cases_json" name="test_cases_json" />
+      </div>
+
       <div class="form-actions">
         <a href="{{ url_for('problem.list_problems') }}" class="btn-cancel"
           >Cancel</a
@@ -278,4 +407,163 @@ endblock %} {% block extra_css %}
     </form>
   </div>
 </div>
-{% endblock %} -->
+
+<script>
+  let testCases = [];
+
+  function addTestCase() {
+    const id = Date.now();
+    testCases.push({
+      id,
+      input: "",
+      expected_output: "",
+      is_sample: false,
+      is_hidden: false,
+    });
+    renderTestCases();
+  }
+
+  function removeTestCase(id) {
+    testCases = testCases.filter((tc) => tc.id !== id);
+    renderTestCases();
+  }
+
+  function updateTestCase(id, field, value) {
+    const tc = testCases.find((tc) => tc.id === id);
+    if (tc) tc[field] = value;
+  }
+
+  function renderTestCases() {
+    const container = document.getElementById("test-cases-container");
+    container.innerHTML = testCases
+      .map(
+        (tc, index) => `
+      <div style="border: 1px solid #ccc; border-radius: 6px; padding: 15px; margin-bottom: 10px; background: white;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+          <strong>Test Case ${index + 1}</strong>
+          <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeTestCase(${
+            tc.id
+          })">
+            <i class="fas fa-trash"></i>
+          </button>
+        </div>
+        <div style="margin-bottom: 10px;">
+          <label style="font-size: 13px; font-weight: 600; color: #555;">Input:</label>
+          <textarea class="form-control" rows="2" placeholder="Ex: [2,7,11,15]\\n9" onchange="updateTestCase(${
+            tc.id
+          }, 'input', this.value)" style="font-family: monospace; font-size: 12px;">${
+          tc.input
+        }</textarea>
+        </div>
+        <div style="margin-bottom: 10px;">
+          <label style="font-size: 13px; font-weight: 600; color: #555;">Expected Output:</label>
+          <textarea class="form-control" rows="2" placeholder="Ex: [0,1]" onchange="updateTestCase(${
+            tc.id
+          }, 'expected_output', this.value)" style="font-family: monospace; font-size: 12px;">${
+          tc.expected_output
+        }</textarea>
+        </div>
+        <div style="display: flex; gap: 15px;">
+          <label style="font-size: 13px;">
+            <input type="checkbox" ${
+              tc.is_sample ? "checked" : ""
+            } onchange="updateTestCase(${tc.id}, 'is_sample', this.checked)"> 
+            <span style="margin-left: 5px;">Is Sample (show in description)</span>
+          </label>
+          <label style="font-size: 13px;">
+            <input type="checkbox" ${
+              tc.is_hidden ? "checked" : ""
+            } onchange="updateTestCase(${tc.id}, 'is_hidden', this.checked)"> 
+            <span style="margin-left: 5px;">Is Hidden (for grading only)</span>
+          </label>
+        </div>
+      </div>
+    `
+      )
+      .join("");
+  }
+
+  function toggleJsonImport() {
+    const section = document.getElementById("json-import-section");
+    section.style.display = section.style.display === "none" ? "block" : "none";
+    if (section.style.display === "block") {
+      document.getElementById("json-import-textarea").focus();
+    }
+  }
+
+  function importTestCasesFromJson() {
+    const textarea = document.getElementById("json-import-textarea");
+    const messageDiv = document.getElementById("import-message");
+    const jsonText = textarea.value.trim();
+
+    messageDiv.innerHTML = "";
+
+    if (!jsonText) {
+      messageDiv.innerHTML =
+        '<span style="color: #dc3545;">❌ Please paste JSON array</span>';
+      return;
+    }
+
+    try {
+      const importedCases = JSON.parse(jsonText);
+
+      if (!Array.isArray(importedCases)) {
+        messageDiv.innerHTML =
+          '<span style="color: #dc3545;">❌ JSON must be an array</span>';
+        return;
+      }
+
+      if (importedCases.length === 0) {
+        messageDiv.innerHTML =
+          '<span style="color: #dc3545;">❌ Array is empty</span>';
+        return;
+      }
+
+      let validCount = 0;
+      importedCases.forEach((tc) => {
+        if (tc.input !== undefined && tc.expected_output !== undefined) {
+          testCases.push({
+            id: Date.now() + Math.random(),
+            input: tc.input || "",
+            expected_output: tc.expected_output || "",
+            is_sample: tc.is_sample || false,
+            is_hidden: tc.is_hidden !== false, // default to true
+          });
+          validCount++;
+        }
+      });
+
+      if (validCount === 0) {
+        messageDiv.innerHTML =
+          '<span style="color: #dc3545;">❌ No valid test cases found</span>';
+        return;
+      }
+
+      renderTestCases();
+      textarea.value = "";
+      toggleJsonImport();
+      messageDiv.innerHTML = `<span style="color: #28a745;">✓ Imported ${validCount} test case${
+        validCount > 1 ? "s" : ""
+      }</span>`;
+      setTimeout(() => {
+        messageDiv.innerHTML = "";
+      }, 3000);
+    } catch (e) {
+      messageDiv.innerHTML = `<span style="color: #dc3545;">❌ Invalid JSON: ${e.message}</span>`;
+    }
+  }
+
+  document.querySelector("form").addEventListener("submit", function (e) {
+    const cleanTestCases = testCases.map((tc) => ({
+      input: tc.input,
+      expected_output: tc.expected_output,
+      is_sample: tc.is_sample,
+      is_hidden: tc.is_hidden,
+    }));
+    document.getElementById("test_cases_json").value =
+      JSON.stringify(cleanTestCases);
+  });
+
+  addTestCase();
+</script>
+{% endblock %}

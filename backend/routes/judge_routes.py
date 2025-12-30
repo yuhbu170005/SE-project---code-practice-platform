@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify, session
-from backend.utils import run_code_external
+from backend.utils import run_code_external, wrap_user_code
 from backend.services.testcase_service import get_public_test_cases, get_all_test_cases
 from backend.services.submission_service import save_submission_to_db
 from backend.services.problem_service import get_problem_by_id
@@ -32,6 +32,16 @@ def run_code():
     code = normalized["code"]
     language = normalized["language"]
     problem_id = normalized["problem_id"]
+
+    # Get problem to check for wrapper_template
+    problem = get_problem_by_id(problem_id)
+    if not problem:
+        return jsonify({"final_status": "Error", "message": "Problem not found"}), 404
+
+    # Wrap user code with template if available
+    wrapper_template = problem.get("wrapper_template")
+    if wrapper_template:
+        code = wrap_user_code(code, wrapper_template, language)
 
     # Get test cases
     test_cases = get_public_test_cases(problem_id)
@@ -116,6 +126,12 @@ def submit_code():
     time_limit_ms = problem.get("time_limit", 1000)  # Default 1000ms
     memory_limit_mb = problem.get("memory_limit", 256)  # Default 256MB
 
+    # Wrap user code with template if available
+    wrapper_template = problem.get("wrapper_template")
+    executable_code = code  # Keep original for saving to DB
+    if wrapper_template:
+        executable_code = wrap_user_code(code, wrapper_template, language)
+
     # Thêm buffer cho network latency (Piston API round-trip time)
     # Actual check = time_limit + 2000ms buffer
     actual_time_limit = time_limit_ms + 2000  # Thêm 2s cho network
@@ -143,8 +159,8 @@ def submit_code():
     max_memory_used = 0
 
     for i, case in enumerate(test_cases):
-        # Run code using Piston API
-        res = run_code_external(code, language, case["input"])
+        # Run code using Piston API (use wrapped/executable code)
+        res = run_code_external(executable_code, language, case["input"])
 
         actual_output = res.get("output", "").replace("\r\n", "\n").strip()
         expected_output = case["expected_output"].replace("\r\n", "\n").strip()
@@ -171,15 +187,16 @@ def submit_code():
                 failed_case_detail = {"error": res.get("error", "Unknown error")}
             break  # Break vì code lỗi, không thể chạy tiếp
 
-        # Check Time Limit Exceeded (với buffer cho network latency)
-        if exec_time and exec_time > actual_time_limit:
+        # Check Time Limit Exceeded (dùng code_execution_time thay vì total time)
+        # code_execution_time đã trừ network latency, chính xác hơn
+        if code_exec_time and code_exec_time > time_limit_ms:
             if final_status == "Accepted":  # Chỉ đổi status nếu chưa có lỗi khác
                 final_status = "Time Limit Exceeded"
             if failed_case_index == 0:
                 failed_case_index = i + 1
                 failed_case_detail = {
                     "input": case["input"],
-                    "time_used": exec_time,
+                    "time_used": code_exec_time,
                     "time_limit": time_limit_ms,
                 }
             # Không break - tiếp tục chạy các test case khác
@@ -214,6 +231,11 @@ def submit_code():
             test_cases_passed += 1
 
     # Save to database (lưu total execution time)
+    # Lưu chỉ failed test case đầu tiên (dạng array 1 item)
+    test_case_results_to_save = None
+    if final_status == "Wrong Answer" and failed_case_detail:
+        test_case_results_to_save = [failed_case_detail]
+
     save_success, submission_id = save_submission_to_db(
         user_id=user_id,
         problem_id=problem_id,
@@ -226,6 +248,7 @@ def submit_code():
             max_code_execution_time if max_code_execution_time > 0 else None
         ),  # Lưu code time
         memory_used=max_memory_used if max_memory_used > 0 else None,
+        test_case_results=test_case_results_to_save,
     )
     if not save_success:
         return (

@@ -1,6 +1,7 @@
 {% extends "base.html" %} {% block title %}Submission Detail - LiteCode{%
 endblock %} {% block content %}
-<div class="container mt-5">
+<div class="container mt-5" style="max-width: 1100px">
+  <!-- Header -->
   <div class="row mb-4">
     <div class="col-md-8">
       <h2><i class="fas fa-code me-2"></i>Submission Details</h2>
@@ -12,26 +13,38 @@ endblock %} {% block content %}
     <div class="col-md-4 text-end">
       {% if submission.status == 'Accepted' %}
       <h3>
-        <span class="badge bg-success"
+        <span class="badge bg-success" style="font-size: 1rem"
           ><i class="fas fa-check"></i> Accepted</span
         >
       </h3>
       {% elif submission.status == 'Wrong Answer' %}
       <h3>
-        <span class="badge bg-danger"
+        <span class="badge bg-danger" style="font-size: 1rem"
           ><i class="fas fa-times"></i> Wrong Answer</span
         >
       </h3>
       {% elif submission.status == 'Runtime Error' %}
       <h3>
-        <span class="badge bg-warning text-dark"
+        <span class="badge bg-danger" style="font-size: 1rem"
           ><i class="fas fa-exclamation-triangle"></i> Runtime Error</span
+        >
+      </h3>
+      {% elif submission.status == 'Compilation Error' %}
+      <h3>
+        <span class="badge bg-danger" style="font-size: 1rem"
+          ><i class="fas fa-bug"></i> Compilation Error</span
         >
       </h3>
       {% elif submission.status == 'Time Limit Exceeded' %}
       <h3>
-        <span class="badge bg-info"
+        <span class="badge bg-warning text-dark" style="font-size: 1rem"
           ><i class="fas fa-hourglass-end"></i> Time Limit Exceeded</span
+        >
+      </h3>
+      {% elif submission.status == 'Memory Limit Exceeded' %}
+      <h3>
+        <span class="badge bg-warning text-dark" style="font-size: 1rem"
+          ><i class="fas fa-memory"></i> Memory Limit Exceeded</span
         >
       </h3>
       {% else %}
@@ -40,13 +53,96 @@ endblock %} {% block content %}
     </div>
   </div>
 
-  <!-- Submitted Time -->
-  <div class="alert alert-light border">
-    <small class="text-muted">
-      <i class="fas fa-calendar me-2"></i>Submitted: {{
-      submission.submitted_at.strftime('%Y-%m-%d %H:%M:%S') if
-      submission.submitted_at else 'N/A' }}
-    </small>
+  <!-- Metadata -->
+  <div class="border rounded p-3 mb-4 bg-light">
+    <div class="row">
+      <div class="col-md-3">
+        <small class="text-muted">
+          <i class="fas fa-calendar me-2"></i>
+          <strong>Submitted:</strong>
+        </small>
+        <br />
+        <small
+          >{{ submission.submitted_at.strftime('%Y-%m-%d %H:%M:%S') if
+          submission.submitted_at else 'N/A' }}</small
+        >
+      </div>
+      <div class="col-md-3">
+        <small class="text-muted">
+          <i class="fas fa-tachometer-alt me-2"></i>
+          <strong>Runtime:</strong>
+        </small>
+        <br />
+        <small
+          >{{ submission.execution_time if submission.execution_time else 'N/A'
+          }}ms</small
+        >
+      </div>
+      <div class="col-md-3">
+        <small class="text-muted">
+          <i class="fas fa-memory me-2"></i>
+          <strong>Memory:</strong>
+        </small>
+        <br />
+        <small
+          >{{ submission.memory_used if submission.memory_used else 'N/A'
+          }}MB</small
+        >
+      </div>
+      <div class="col-md-3">
+        <small class="text-muted">
+          <i class="fas fa-list-check me-2"></i>
+          <strong>Pass Rate:</strong>
+        </small>
+        <br />
+        <small>
+          {% if submission.total_test_cases > 0 %} {{
+          submission.test_cases_passed }}/{{ submission.total_test_cases }} ({{
+          (submission.test_cases_passed * 100 / submission.total_test_cases) |
+          round(1) }}%) {% else %} N/A {% endif %}
+        </small>
+      </div>
+    </div>
+  </div>
+
+  <!-- Statistics Card -->
+  <div class="card mb-4">
+    <div class="card-header bg-primary text-white">
+      <i class="fas fa-chart-bar me-2"></i>Summary Statistics
+    </div>
+    <div class="card-body">
+      <div class="row text-center">
+        <div class="col-md-3">
+          <h5 class="text-success">
+            <i class="fas fa-check-circle"></i> Passed
+          </h5>
+          <h3 class="text-success">{{ submission.test_cases_passed or 0 }}</h3>
+        </div>
+        <div class="col-md-3">
+          <h5 class="text-danger">
+            <i class="fas fa-times-circle"></i> Failed
+          </h5>
+          <h3 class="text-danger">
+            {% if submission.total_test_cases %} {{ submission.total_test_cases
+            - submission.test_cases_passed }} {% else %} 0 {% endif %}
+          </h3>
+        </div>
+        <div class="col-md-3">
+          <h5 class="text-info"><i class="fas fa-list"></i> Total</h5>
+          <h3 class="text-info">{{ submission.total_test_cases or 0 }}</h3>
+        </div>
+        <div class="col-md-3">
+          <h5 class="text-primary">
+            <i class="fas fa-percent"></i> Success Rate
+          </h5>
+          <h3 class="text-primary">
+            {% if submission.total_test_cases > 0 %} {{
+            (submission.test_cases_passed * 100 / submission.total_test_cases) |
+            round(1) }}% {% else %} 0% {% endif %}
+          </h3>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- Code Section -->
@@ -56,65 +152,93 @@ endblock %} {% block content %}
     </div>
     <div class="card-body p-0">
       <pre
-        style="margin: 0; padding: 20px; overflow-x: auto"
+        style="margin: 0; padding: 20px; overflow-x: auto; max-height: 400px"
       ><code class="language-python">{{ submission.code }}</code></pre>
     </div>
   </div>
 
-  <!-- Test Cases Results -->
-  <div class="card">
-    <div class="card-header bg-dark text-white">
-      <i class="fas fa-flask me-2"></i>Test Cases
+  <!-- Sample Test Cases Results - Only for Wrong Answer -->
+  {% if submission.status == 'Wrong Answer' and submission.test_case_results %}
+  <div class="card mb-4">
+    <div class="card-header bg-danger text-white">
+      <i class="fas fa-times-circle me-2"></i>Failed Test Case Details
     </div>
     <div class="card-body">
-      {% if test_cases %}
-      <div class="accordion" id="testCasesAccordion">
-        {% for test_case in test_cases %}
-        <div class="accordion-item">
+      {% if submission.test_case_results | length > 0 %}
+      <div class="accordion" id="failedTestCasesAccordion">
+        {% for test_case in submission.test_case_results %}
+        <div class="accordion-item border border-danger">
           <h2 class="accordion-header">
             <button
-              class="accordion-button {% if loop.index != 1 %}collapsed{% endif %}"
+              class="accordion-button"
               type="button"
               data-bs-toggle="collapse"
-              data-bs-target="#testCase{{ loop.index }}"
+              data-bs-target="#failedTestCase{{ loop.index }}"
+              style="background-color: #f8d7da; color: #721c24"
             >
-              <i class="fas fa-code me-2"></i>Test Case {{ loop.index }} {% if
-              not test_case.is_hidden %}
-              <span class="badge bg-info ms-2">Sample</span>
-              {% else %}
-              <span class="badge bg-secondary ms-2">Hidden</span>
-              {% endif %}
+              <i class="fas fa-exclamation-triangle me-2"></i>
+              <strong>Failed Test Case</strong>
             </button>
           </h2>
           <div
-            id="testCase{{ loop.index }}"
-            class="accordion-collapse collapse {% if loop.index == 1 %}show{% endif %}"
-            data-bs-parent="#testCasesAccordion"
+            id="failedTestCase{{ loop.index }}"
+            class="accordion-collapse collapse show"
+            data-bs-parent="#failedTestCasesAccordion"
           >
             <div class="accordion-body">
               <div class="row">
-                <div class="col-md-6">
-                  <h6 class="fw-bold">Input:</h6>
+                <div class="col-md-4">
+                  <h6 class="fw-bold text-secondary">
+                    <i class="fas fa-arrow-right me-2"></i>Input:
+                  </h6>
                   <pre
                     style="
                       background-color: #f5f5f5;
-                      padding: 10px;
+                      padding: 12px;
                       border-radius: 4px;
+                      border-left: 3px solid #0d6efd;
+                      font-size: 12px;
+                      max-height: 200px;
+                      overflow-y: auto;
                     "
                   >
 {{ test_case.input }}</pre
                   >
                 </div>
-                <div class="col-md-6">
-                  <h6 class="fw-bold">Expected Output:</h6>
+                <div class="col-md-4">
+                  <h6 class="fw-bold text-success">
+                    <i class="fas fa-check me-2"></i>Expected Output:
+                  </h6>
                   <pre
                     style="
-                      background-color: #f5f5f5;
-                      padding: 10px;
+                      background-color: #e8f5e9;
+                      padding: 12px;
                       border-radius: 4px;
+                      border-left: 3px solid #28a745;
+                      font-size: 12px;
+                      max-height: 200px;
+                      overflow-y: auto;
                     "
                   >
 {{ test_case.expected_output }}</pre
+                  >
+                </div>
+                <div class="col-md-4">
+                  <h6 class="fw-bold text-danger">
+                    <i class="fas fa-times me-2"></i>Your Output:
+                  </h6>
+                  <pre
+                    style="
+                      background-color: #ffebee;
+                      padding: 12px;
+                      border-radius: 4px;
+                      border-left: 3px solid #dc3545;
+                      font-size: 12px;
+                      max-height: 200px;
+                      overflow-y: auto;
+                    "
+                  >
+{{ test_case.actual_output }}</pre
                   >
                 </div>
               </div>
@@ -124,13 +248,53 @@ endblock %} {% block content %}
         {% endfor %}
       </div>
       {% else %}
-      <p class="text-muted">No test cases available.</p>
+      <div class="alert alert-warning" role="alert">
+        <i class="fas fa-info-circle me-2"></i>
+        No failed test case details available for debugging
+      </div>
       {% endif %}
     </div>
   </div>
+  {% elif submission.status == 'Wrong Answer' %}
+  <div class="alert alert-info" role="alert">
+    <i class="fas fa-info-circle me-2"></i>
+    <strong>Debug Info:</strong> Detailed test case information not available.
+    Test against provided examples to identify the issue.
+  </div>
+  {% elif submission.status == 'Accepted' %}
+  <div class="alert alert-success" role="alert">
+    <i class="fas fa-check-circle me-2"></i>
+    <strong>Congratulations!</strong> All test cases passed. Test case details
+    are not shown for accepted submissions.
+  </div>
+  {% elif submission.status == 'Time Limit Exceeded' %}
+  <div class="alert alert-warning" role="alert">
+    <i class="fas fa-hourglass-end me-2"></i>
+    <strong>Time Limit Exceeded:</strong> Your solution is too slow. Optimize
+    your algorithm for better performance.
+  </div>
+  {% elif submission.status == 'Memory Limit Exceeded' %}
+  <div class="alert alert-warning" role="alert">
+    <i class="fas fa-memory me-2"></i>
+    <strong>Memory Limit Exceeded:</strong> Your solution uses too much memory.
+    Optimize your data structures.
+  </div>
+  {% elif submission.status == 'Runtime Error' %}
+  <div class="alert alert-danger" role="alert">
+    <i class="fas fa-exclamation-triangle me-2"></i>
+    <strong>Runtime Error:</strong> Your code crashed during execution. Check
+    for null pointer exceptions, array out of bounds, or division by zero.
+  </div>
+  {% elif submission.status == 'Compilation Error' %}
+  <div class="alert alert-danger" role="alert">
+    <i class="fas fa-bug me-2"></i>
+    <strong>Compilation Error:</strong> Your code has syntax errors. Please
+    review your code.
+  </div>
+  {% endif %}
 
-  <!-- Back Button -->
-  <div class="mt-4">
+  <!-- Back Buttons -->
+  <div class="mt-4 mb-5">
     <a
       href="{{ url_for('submission.list_submissions') }}"
       class="btn btn-secondary"
@@ -153,7 +317,16 @@ endblock %} {% block content %}
     line-height: 1.5;
   }
   .accordion-button:not(.collapsed) {
-    background-color: #e7f1ff;
+    background-color: #d4edda !important;
+    color: #155724;
+  }
+  .card {
+    border: 1px solid #dee2e6;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  }
+  .card-header {
+    font-weight: 600;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.125);
   }
 </style>
 {% endblock %}
