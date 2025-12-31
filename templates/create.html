@@ -163,12 +163,6 @@ endblock %} {% block extra_css %}
 <div class="page-container">
   <h1 class="page-title">Create New Problem</h1>
 
-  {% if error %}
-  <div class="alert-error">
-    <i class="fas fa-exclamation-circle"></i> {{ error }}
-  </div>
-  {% endif %}
-
   <div class="form-card">
     <form method="post">
       <div class="form-group">
@@ -182,7 +176,6 @@ endblock %} {% block extra_css %}
           class="form-control"
           placeholder="Ex: Two Sum"
           value="{{ form_data.title if form_data else '' }}"
-          required
         />
       </div>
 
@@ -196,7 +189,6 @@ endblock %} {% block extra_css %}
           name="slug"
           class="form-control"
           placeholder="Ex: two-sum"
-          required
         />
       </div>
 
@@ -209,7 +201,6 @@ endblock %} {% block extra_css %}
           name="description"
           class="form-control"
           placeholder="Write problem description here..."
-          required
         ></textarea>
       </div>
 
@@ -218,12 +209,7 @@ endblock %} {% block extra_css %}
           <label class="form-label" for="difficulty"
             >Difficulty <span style="color: red">*</span></label
           >
-          <select
-            id="difficulty"
-            name="difficulty"
-            class="form-control"
-            required
-          >
+          <select id="difficulty" name="difficulty" class="form-control">
             <option value="">Select...</option>
             <option value="Easy">Easy</option>
             <option value="Medium">Medium</option>
@@ -553,7 +539,168 @@ endblock %} {% block extra_css %}
     }
   }
 
-  document.querySelector("form").addEventListener("submit", function (e) {
+  // Validation function
+  function validateForm() {
+    const title = document.getElementById("title").value.trim();
+    const slug = document.getElementById("slug").value.trim();
+    const description = document.getElementById("description").value.trim();
+    const difficulty = document.getElementById("difficulty").value;
+
+    // Title validation (3+ chars)
+    if (!title) {
+      Swal.fire({
+        icon: "warning",
+        title: "Validation Error",
+        text: "Please enter a problem title",
+      });
+      return false;
+    }
+
+    if (title.length < 3) {
+      Swal.fire({
+        icon: "warning",
+        title: "Validation Error",
+        text: "Title must be at least 3 characters",
+      });
+      return false;
+    }
+
+    if (title.length > 200) {
+      Swal.fire({
+        icon: "warning",
+        title: "Validation Error",
+        text: "Title must not exceed 200 characters",
+      });
+      return false;
+    }
+
+    // Slug validation (3+ chars, lowercase/numbers/hyphens only)
+    if (!slug) {
+      Swal.fire({
+        icon: "warning",
+        title: "Validation Error",
+        text: "Please enter a problem slug",
+      });
+      return false;
+    }
+
+    if (slug.length < 3) {
+      Swal.fire({
+        icon: "warning",
+        title: "Validation Error",
+        text: "Slug must be at least 3 characters",
+      });
+      return false;
+    }
+
+    if (slug.length > 100) {
+      Swal.fire({
+        icon: "warning",
+        title: "Validation Error",
+        text: "Slug must not exceed 100 characters",
+      });
+      return false;
+    }
+
+    // Slug format validation (only lowercase, numbers, and hyphens)
+    if (!/^[a-z0-9-]+$/.test(slug)) {
+      Swal.fire({
+        icon: "warning",
+        title: "Validation Error",
+        text: "Slug can only contain lowercase letters, numbers, and hyphens",
+      });
+      return false;
+    }
+
+    if (slug.startsWith("-") || slug.endsWith("-")) {
+      Swal.fire({
+        icon: "warning",
+        title: "Validation Error",
+        text: "Slug cannot start or end with a hyphen",
+      });
+      return false;
+    }
+
+    // Description validation (10+ chars)
+    if (!description) {
+      Swal.fire({
+        icon: "warning",
+        title: "Validation Error",
+        text: "Please enter a problem description",
+      });
+      return false;
+    }
+
+    if (description.length < 10) {
+      Swal.fire({
+        icon: "warning",
+        title: "Validation Error",
+        text: "Description must be at least 10 characters",
+      });
+      return false;
+    }
+
+    if (description.length > 50000) {
+      Swal.fire({
+        icon: "warning",
+        title: "Validation Error",
+        text: "Description is too long (max 50,000 characters)",
+      });
+      return false;
+    }
+
+    // Difficulty validation
+    if (!difficulty) {
+      Swal.fire({
+        icon: "warning",
+        title: "Validation Error",
+        text: "Please select a difficulty level",
+      });
+      return false;
+    }
+
+    // Test cases validation
+    if (testCases.length === 0) {
+      Swal.fire({
+        icon: "warning",
+        title: "Validation Error",
+        text: "Please add at least one test case",
+      });
+      return false;
+    }
+
+    // Check if all test cases have input and output
+    for (let i = 0; i < testCases.length; i++) {
+      if (!testCases[i].input.trim()) {
+        Swal.fire({
+          icon: "warning",
+          title: "Validation Error",
+          text: `Test case ${i + 1}: Input is required`,
+        });
+        return false;
+      }
+      if (!testCases[i].expected_output.trim()) {
+        Swal.fire({
+          icon: "warning",
+          title: "Validation Error",
+          text: `Test case ${i + 1}: Expected output is required`,
+        });
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  document.querySelector("form").addEventListener("submit", async function (e) {
+    e.preventDefault();
+
+    // Validate form
+    if (!validateForm()) {
+      return;
+    }
+
+    // Prepare test cases
     const cleanTestCases = testCases.map((tc) => ({
       input: tc.input,
       expected_output: tc.expected_output,
@@ -562,6 +709,57 @@ endblock %} {% block extra_css %}
     }));
     document.getElementById("test_cases_json").value =
       JSON.stringify(cleanTestCases);
+
+    // Show loading state
+    Swal.fire({
+      title: "Creating Problem",
+      text: "Please wait...",
+      allowOutsideClick: false,
+      didOpen: () => {
+        Swal.showLoading();
+      },
+    });
+
+    try {
+      const formData = new FormData(this);
+      const response = await fetch("/problems/create", {
+        method: "POST",
+        body: formData,
+        headers: {
+          "X-Requested-With": "XMLHttpRequest",
+        },
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        Swal.fire({
+          icon: "success",
+          title: "Success",
+          text: data.message || "Problem created successfully!",
+          showConfirmButton: false,
+          timer: 1500,
+        }).then(() => {
+          window.location.href = "/problems";
+        });
+      } else {
+        Swal.fire({
+          icon: "error",
+          title: "Validation Error",
+          html: `<div style="text-align: left; white-space: pre-wrap; word-wrap: break-word;">${
+            data.message ||
+            "Failed to create problem. Please check your inputs."
+          }</div>`,
+          confirmButtonText: "OK",
+        });
+      }
+    } catch (error) {
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: `An error occurred: ${error.message}`,
+      });
+    }
   });
 
   addTestCase();

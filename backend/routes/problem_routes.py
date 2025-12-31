@@ -22,6 +22,7 @@ from backend.services.testcase_service import (
     save_test_cases,
     get_all_test_cases_with_flags,
 )
+from backend.validators import validate_problem_input
 import json
 
 problem_bp = Blueprint("problem", __name__)
@@ -91,7 +92,7 @@ def create():
         title = request.form.get("title", "").strip()
         slug = request.form.get("slug", "").strip()
         description = request.form.get("description", "").strip()
-        difficulty = request.form.get("difficulty", "")
+        difficulty = request.form.get("difficulty", "").strip()
         time_limit = request.form.get("time_limit", 1000)
         memory_limit = request.form.get("memory_limit", 256)
         tags = request.form.getlist("tags")
@@ -102,13 +103,40 @@ def create():
         wrapper_template = request.form.get("wrapper_template") or None
         function_name = request.form.get("function_name") or None
 
+        # Check if it's an AJAX request
+        is_ajax = request.headers.get("X-Requested-With") == "XMLHttpRequest"
+
+        # Parse test cases
+        test_cases = []
+        if test_cases_json:
+            try:
+                test_cases = json.loads(test_cases_json)
+            except json.JSONDecodeError:
+                return (
+                    jsonify(
+                        {"success": False, "message": "Invalid test cases JSON format"}
+                    ),
+                    400,
+                )
+
+        # Validate input
+        is_valid, errors, normalized = validate_problem_input(
+            title, slug, description, difficulty, test_cases, time_limit, memory_limit
+        )
+
+        if not is_valid:
+            # Format error messages
+            error_messages = "\n".join([f"• {msg}" for msg in errors.values()])
+            return jsonify({"success": False, "message": error_messages}), 400
+
+        # Use normalized values
         success, result = create_problem(
-            title,
-            slug,
-            description,
-            difficulty,
-            time_limit,
-            memory_limit,
+            normalized["title"],
+            normalized["slug"],
+            normalized["description"],
+            normalized["difficulty"],
+            normalized.get("time_limit", 1000),
+            normalized.get("memory_limit", 256),
             tags,
             starter_code,
             wrapper_template,
@@ -119,20 +147,24 @@ def create():
             problem_id = result
 
             # Handle test cases if provided
-            if test_cases_json:
+            if test_cases:
                 try:
-                    test_cases = json.loads(test_cases_json)
                     save_test_cases(problem_id, test_cases)
                 except Exception as e:
                     print(f"Error saving test cases: {e}")
 
-            return redirect(url_for("problem.list_problems"))
-        else:
-            tags = get_all_tags()
             return (
-                render_template("create.html", error=f"Error: {result}", tags=tags),
-                500,
+                jsonify(
+                    {
+                        "success": True,
+                        "message": "Problem created successfully!",
+                        "problem_id": problem_id,
+                    }
+                ),
+                200,
             )
+        else:
+            return jsonify({"success": False, "message": f"Error: {result}"}), 500
 
     # GET request - show form with tags
     tags = get_all_tags()
@@ -143,10 +175,10 @@ def create():
 @admin_required
 def edit(id):
     if request.method == "POST":
-        title = request.form.get("title")
-        slug = request.form.get("slug")
-        description = request.form.get("description")
-        difficulty = request.form.get("difficulty")
+        title = request.form.get("title", "").strip()
+        slug = request.form.get("slug", "").strip()
+        description = request.form.get("description", "").strip()
+        difficulty = request.form.get("difficulty", "").strip()
         time_limit = request.form.get("time_limit", 1000)
         memory_limit = request.form.get("memory_limit", 256)
         tags = request.form.getlist("tags")
@@ -157,14 +189,41 @@ def edit(id):
         wrapper_template = request.form.get("wrapper_template") or None
         function_name = request.form.get("function_name") or None
 
+        # Check if it's an AJAX request
+        is_ajax = request.headers.get("X-Requested-With") == "XMLHttpRequest"
+
+        # Parse test cases
+        test_cases = []
+        if test_cases_json:
+            try:
+                test_cases = json.loads(test_cases_json)
+            except json.JSONDecodeError:
+                return (
+                    jsonify(
+                        {"success": False, "message": "Invalid test cases JSON format"}
+                    ),
+                    400,
+                )
+
+        # Validate input
+        is_valid, errors, normalized = validate_problem_input(
+            title, slug, description, difficulty, test_cases, time_limit, memory_limit
+        )
+
+        if not is_valid:
+            # Format error messages
+            error_messages = "\n".join([f"• {msg}" for msg in errors.values()])
+            return jsonify({"success": False, "message": error_messages}), 400
+
+        # Use normalized values
         success = update_problem(
             id,
-            title,
-            slug,
-            description,
-            difficulty,
-            time_limit,
-            memory_limit,
+            normalized["title"],
+            normalized["slug"],
+            normalized["description"],
+            normalized["difficulty"],
+            normalized.get("time_limit", 1000),
+            normalized.get("memory_limit", 256),
             tags,
             starter_code,
             wrapper_template,
@@ -173,21 +232,19 @@ def edit(id):
 
         if success:
             # Handle test cases if provided
-            if test_cases_json:
+            if test_cases:
                 try:
-                    test_cases = json.loads(test_cases_json)
                     save_test_cases(id, test_cases)
                 except Exception as e:
                     print(f"Error saving test cases: {e}")
 
-            return redirect(url_for("problem.list_problems"))
+            return (
+                jsonify({"success": True, "message": "Problem updated successfully!"}),
+                200,
+            )
         else:
             return (
-                render_template(
-                    "edit.html",
-                    error="Failed to update problem",
-                    problem={"problem_id": id},
-                ),
+                jsonify({"success": False, "message": "Failed to update problem"}),
                 500,
             )
 

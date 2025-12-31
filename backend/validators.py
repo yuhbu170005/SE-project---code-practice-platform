@@ -331,3 +331,310 @@ def validate_code_submission(code, language, problem_id):
         normalized["problem_id"] = pid_normalized
 
     return len(errors) == 0, errors, normalized
+
+
+# ==================== PROBLEM VALIDATION ====================
+
+# Problem slug pattern - only lowercase, numbers, and hyphens
+PROBLEM_SLUG_PATTERN = re.compile(r"^[a-z0-9-]+$")
+
+# Supported difficulty levels
+DIFFICULTY_LEVELS = ["easy", "medium", "hard"]
+
+
+def validate_problem_title(title):
+    """
+    Validate problem title
+
+    Rules:
+    - Required field
+    - 3-200 characters
+
+    Args:
+        title (str): Problem title
+
+    Returns:
+        tuple: (is_valid, error_message)
+    """
+    if not title:
+        return False, "Problem title is required"
+
+    title = title.strip()
+
+    if len(title) < 3:
+        return False, "Title must be at least 3 characters"
+
+    if len(title) > 200:
+        return False, "Title must not exceed 200 characters"
+
+    return True, None
+
+
+def validate_problem_slug(slug):
+    """
+    Validate problem slug
+
+    Rules:
+    - Required field
+    - 3-100 characters
+    - Only lowercase letters, numbers, and hyphens
+    - Cannot start or end with hyphen
+
+    Args:
+        slug (str): Problem slug
+
+    Returns:
+        tuple: (is_valid, error_message)
+    """
+    if not slug:
+        return False, "Problem slug is required"
+
+    slug = slug.strip()
+
+    if len(slug) < 3:
+        return False, "Slug must be at least 3 characters"
+
+    if len(slug) > 100:
+        return False, "Slug must not exceed 100 characters"
+
+    if not PROBLEM_SLUG_PATTERN.match(slug):
+        return (
+            False,
+            "Slug can only contain lowercase letters, numbers, and hyphens",
+        )
+
+    if slug.startswith("-") or slug.endswith("-"):
+        return False, "Slug cannot start or end with a hyphen"
+
+    return True, None
+
+
+def validate_problem_description(description):
+    """
+    Validate problem description
+
+    Rules:
+    - Required field
+    - At least 10 characters
+    - Max 50,000 characters
+
+    Args:
+        description (str): Problem description
+
+    Returns:
+        tuple: (is_valid, error_message)
+    """
+    if not description:
+        return False, "Problem description is required"
+
+    description = description.strip()
+
+    if len(description) < 10:
+        return False, "Description must be at least 10 characters"
+
+    if len(description) > 50000:
+        return False, "Description is too long (max 50,000 characters)"
+
+    return True, None
+
+
+def validate_difficulty(difficulty):
+    """
+    Validate problem difficulty level
+
+    Rules:
+    - Must be one of: easy, medium, hard
+    - Case-insensitive
+
+    Args:
+        difficulty (str): Difficulty level
+
+    Returns:
+        tuple: (is_valid, error_message, normalized_difficulty)
+    """
+    if not difficulty:
+        return False, "Difficulty level is required", None
+
+    difficulty_lower = difficulty.strip().lower()
+
+    if difficulty_lower not in DIFFICULTY_LEVELS:
+        return (
+            False,
+            f"Difficulty must be one of: {', '.join(DIFFICULTY_LEVELS)}",
+            None,
+        )
+
+    return True, None, difficulty_lower
+
+
+def validate_time_limit(time_limit):
+    """
+    Validate problem time limit (in milliseconds)
+
+    Rules:
+    - Must be a positive integer
+    - Between 100ms and 30000ms (30 seconds)
+
+    Args:
+        time_limit: Time limit in milliseconds
+
+    Returns:
+        tuple: (is_valid, error_message, normalized_value)
+    """
+    if time_limit is None or time_limit == "":
+        return True, None, 1000  # Default 1 second
+
+    try:
+        limit = int(time_limit)
+        if limit < 100:
+            return False, "Time limit must be at least 100 milliseconds", None
+        if limit > 30000:
+            return False, "Time limit must not exceed 30,000 milliseconds", None
+        return True, None, limit
+    except (ValueError, TypeError):
+        return False, "Time limit must be a valid number", None
+
+
+def validate_memory_limit(memory_limit):
+    """
+    Validate problem memory limit (in MB)
+
+    Rules:
+    - Must be a positive integer
+    - Between 32MB and 2048MB
+
+    Args:
+        memory_limit: Memory limit in MB
+
+    Returns:
+        tuple: (is_valid, error_message, normalized_value)
+    """
+    if memory_limit is None or memory_limit == "":
+        return True, None, 256  # Default 256MB
+
+    try:
+        limit = int(memory_limit)
+        if limit < 32:
+            return False, "Memory limit must be at least 32 MB", None
+        if limit > 2048:
+            return False, "Memory limit must not exceed 2048 MB", None
+        return True, None, limit
+    except (ValueError, TypeError):
+        return False, "Memory limit must be a valid number", None
+
+
+def validate_test_cases(test_cases_list):
+    """
+    Validate test cases
+
+    Rules:
+    - At least 1 test case required
+    - Each test case must have input and expected_output
+    - Input and output cannot be empty
+
+    Args:
+        test_cases_list (list): List of test case dictionaries
+
+    Returns:
+        tuple: (is_valid, error_message)
+    """
+    if not test_cases_list or not isinstance(test_cases_list, list):
+        return False, "At least one test case is required"
+
+    if len(test_cases_list) == 0:
+        return False, "At least one test case is required"
+
+    for i, test_case in enumerate(test_cases_list, 1):
+        if not isinstance(test_case, dict):
+            return False, f"Test case {i} is invalid"
+
+        if "input" not in test_case or not str(test_case["input"]).strip():
+            return False, f"Test case {i}: Input is required"
+
+        if (
+            "expected_output" not in test_case
+            or not str(test_case["expected_output"]).strip()
+        ):
+            return False, f"Test case {i}: Expected output is required"
+
+    return True, None
+
+
+def validate_problem_input(
+    title,
+    slug,
+    description,
+    difficulty,
+    test_cases=None,
+    time_limit=None,
+    memory_limit=None,
+):
+    """
+    Validate all problem input data at once
+
+    Args:
+        title (str): Problem title
+        slug (str): Problem slug
+        description (str): Problem description
+        difficulty (str): Difficulty level
+        test_cases (list): List of test cases
+        time_limit: Time limit (optional)
+        memory_limit: Memory limit (optional)
+
+    Returns:
+        tuple: (is_valid, dict of errors, dict of normalized values)
+    """
+    errors = {}
+    normalized = {}
+
+    # Validate title
+    is_valid, error = validate_problem_title(title)
+    if not is_valid:
+        errors["title"] = error
+    else:
+        normalized["title"] = title.strip()
+
+    # Validate slug
+    is_valid, error = validate_problem_slug(slug)
+    if not is_valid:
+        errors["slug"] = error
+    else:
+        normalized["slug"] = slug.strip().lower()
+
+    # Validate description
+    is_valid, error = validate_problem_description(description)
+    if not is_valid:
+        errors["description"] = error
+    else:
+        normalized["description"] = description.strip()
+
+    # Validate difficulty
+    is_valid, error, normalized_diff = validate_difficulty(difficulty)
+    if not is_valid:
+        errors["difficulty"] = error
+    else:
+        normalized["difficulty"] = normalized_diff
+
+    # Validate test cases if provided
+    if test_cases is not None:
+        is_valid, error = validate_test_cases(test_cases)
+        if not is_valid:
+            errors["test_cases"] = error
+
+    # Validate time limit if provided
+    if time_limit is not None:
+        is_valid, error, normalized_limit = validate_time_limit(time_limit)
+        if not is_valid:
+            errors["time_limit"] = error
+        else:
+            normalized["time_limit"] = normalized_limit
+
+    # Validate memory limit if provided
+    if memory_limit is not None:
+        is_valid, error, normalized_limit = validate_memory_limit(memory_limit)
+        if not is_valid:
+            errors["memory_limit"] = error
+        else:
+            normalized["memory_limit"] = normalized_limit
+
+    return len(errors) == 0, errors, normalized
