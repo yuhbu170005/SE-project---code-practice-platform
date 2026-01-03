@@ -45,3 +45,9 @@ Thumbs.db
 # .gitignore
 __pycache__/
 *.pyc
+/bin/
+/Libs/
+/.settings/
+/.classpath
+.svn/
+.cache/
