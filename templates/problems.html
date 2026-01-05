@@ -207,7 +207,7 @@
                     {% for problem in problems %}
                     <tr style="cursor: pointer;" onclick="navigateTo('{{ url_for('problem.problem_detail', slug=problem.slug) }}')">
                         
-                        <td style="color: #999; font-weight: 500;">{{ problem.problem_id }}</td>
+                        <td style="color: #999; font-weight: 500;">{{ (pagination.page - 1) * 7 + loop.index }}</td>
                         
                         <td>
                             <a href="{{ url_for('problem.problem_detail', slug=problem.slug) }}" class="problem-link">
@@ -294,7 +294,6 @@
     
 </div>
 
-<form id="deleteForm" method="POST" style="display: none;"></form>
 {% endblock %}
 
 {% block extra_js %}
@@ -314,9 +313,25 @@
             confirmButtonText: 'Yes, delete it!'
         }).then((result) => {
             if (result.isConfirmed) {
-                const form = document.getElementById('deleteForm');
-                form.action = "/problems/delete/" + problemId;
-                form.submit();
+                fetch("/problems/delete/" + problemId, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        Swal.fire('Deleted!', data.message, 'success').then(() => {
+                            window.location.reload();
+                        });
+                    } else {
+                        Swal.fire('Error!', data.message, 'error');
+                    }
+                })
+                .catch(err => {
+                    Swal.fire('Error!', 'Failed to delete problem.', 'error');
+                });
             }
         })
     }

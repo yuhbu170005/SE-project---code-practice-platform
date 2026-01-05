@@ -64,13 +64,16 @@ def run_code():
         actual_output = res.get("output", "").replace("\r\n", "\n").strip()
         expected_output = case["expected_output"].replace("\r\n", "\n").strip()
 
-        # 1. Nếu code bị lỗi (Compile Error, Runtime Error)
+        # 1. Nếu code bị lỗi (Compile Error, Runtime Error, hoặc Timeout)
         if not res["success"]:
-            # Lấy status từ utils trả về (VD: Runtime Error)
+            # Lấy status từ utils trả về (VD: Runtime Error, Time Limit Exceeded)
             status = res.get("status_label", "Runtime Error")
 
             result_item["status"] = status
             result_item["error"] = res["error"]
+            result_item["input"] = case["input"]
+            result_item["expected"] = expected_output
+            result_item["actual"] = actual_output if actual_output else "N/A"
             final_status = status
 
         # 2. Nếu code chạy xong nhưng ra kết quả sai
@@ -180,12 +183,31 @@ def submit_code():
             max_memory_used = max(max_memory_used, memory)
 
         # Case lỗi Runtime/Compile - Break ngay vì code không chạy được
-        if not res["success"]:
+        # NHƯNG nếu là timeout thì KHÔNG break, xử lý như TLE bên dưới
+        if not res["success"] and not res.get("is_timeout", False):
             final_status = res.get("status_label", "Runtime Error")
             if failed_case_index == 0:  # Lưu test case đầu tiên fail
                 failed_case_index = i + 1
-                failed_case_detail = {"error": res.get("error", "Unknown error")}
+                failed_case_detail = {
+                    "input": case["input"],
+                    "expected_output": expected_output,
+                    "actual_output": actual_output if actual_output else "N/A",
+                    "error": res.get("error", "Unknown error"),
+                }
             break  # Break vì code lỗi, không thể chạy tiếp
+
+        # Nếu là timeout, xử lý như TLE (không break, set status và tiếp tục)
+        if res.get("is_timeout", False):
+            if final_status == "Accepted":
+                final_status = "Time Limit Exceeded"
+            if failed_case_index == 0:
+                failed_case_index = i + 1
+                failed_case_detail = {
+                    "input": case["input"],
+                    "error": res.get("error", "Time Limit Exceeded"),
+                }
+            # Không break - tiếp tục chạy test case khác
+            continue
 
         # Check Time Limit Exceeded (dùng code_execution_time thay vì total time)
         # code_execution_time đã trừ network latency, chính xác hơn

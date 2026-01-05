@@ -1,4 +1,8 @@
 from backend.database import get_db_connection
+from backend.services.testcase_service import (
+    get_sample_test_cases,
+    get_public_test_cases,
+)
 import markdown
 
 
@@ -20,36 +24,18 @@ def get_problem_detail_by_slug(slug):
             md = markdown.Markdown(extensions=["extra", "codehilite", "fenced_code"])
             problem["description"] = md.convert(problem["description"])
 
-        # Get sample test cases for display in description (Examples)
-        cursor.execute(
-            """
-            SELECT test_case_id, input, expected_output 
-            FROM test_cases 
-            WHERE problem_id = %s AND is_sample = TRUE
-            ORDER BY test_case_id ASC
-            """,
-            (problem["problem_id"],),
-        )
-        sample_cases = cursor.fetchall()
-
-        # Get public test cases for "Test Cases" tab (non-sample, visible)
-        cursor.execute(
-            """
-            SELECT test_case_id, input, expected_output 
-            FROM test_cases 
-            WHERE problem_id = %s AND is_hidden = FALSE AND is_sample = FALSE
-            ORDER BY test_case_id ASC
-            """,
-            (problem["problem_id"],),
-        )
-        test_cases = cursor.fetchall()
-
-        return problem, sample_cases, test_cases
+        problem_id = problem["problem_id"]
 
     finally:
         if conn.is_connected():
             cursor.close()
             conn.close()
+
+    # Get test cases using testcase_service (reuse existing functions)
+    sample_cases = get_sample_test_cases(problem_id)
+    test_cases = get_public_test_cases(problem_id)
+
+    return problem, sample_cases, test_cases
 
 
 def get_problems_list(difficulty=None, search=None, tags=None, page=1, per_page=7):

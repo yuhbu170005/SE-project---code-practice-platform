@@ -25,7 +25,8 @@ def get_sample_test_cases(problem_id):
 
 
 def get_public_test_cases(problem_id):
-    """Lấy test case công khai để người dùng chạy thử (Run Code) - không bao gồm sample cases"""
+    """Lấy test case công khai để người dùng chạy thử (Run Code) - không bao gồm sample cases
+    Giới hạn tối đa 3 test cases để tránh lộ quá nhiều và tiết kiệm thời gian"""
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
     try:
@@ -34,6 +35,8 @@ def get_public_test_cases(problem_id):
             SELECT input, expected_output 
             FROM test_cases 
             WHERE problem_id = %s AND is_hidden = FALSE AND is_sample = FALSE
+            ORDER BY test_case_id ASC
+            LIMIT 3
         """,
             (problem_id,),
         )

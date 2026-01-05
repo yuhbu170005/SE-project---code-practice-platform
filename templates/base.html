@@ -108,6 +108,26 @@
     <div class="container mt-4">{% block content %}{% endblock %}</div>
     {% endblock %}
 
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %} {% if
+    messages %}
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        {% for category, message in messages %}
+          Swal.fire({
+            icon: '{{ "success" if category == "success" else "error" if category == "danger" else "info" }}',
+            title: '{{ "Success!" if category == "success" else "Error!" if category == "danger" else "Notice" }}',
+            text: '{{ message }}',
+            timer: 3000,
+            showConfirmButton: false,
+            toast: true,
+            position: 'top-end'
+          });
+        {% endfor %}
+      });
+    </script>
+    {% endif %} {% endwith %}
+
     <!-- Footer -->
     <footer id="main-footer" class="mt-auto py-3 bg-light text-center">
       <p class="mb-0 text-muted">

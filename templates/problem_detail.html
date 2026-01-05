@@ -7,10 +7,40 @@ endblock %} {% block body_class %}mode-immersive overflow-hidden{% endblock %}
   <div class="ide-container">
     <div class="ide-left">
       <div class="ide-content">
-        <h3 class="mb-2">{{ problem.problem_id }}. {{ problem.title }}</h3>
-        <span class="badge-diff diff-{{ problem.difficulty }} mb-3"
-          >{{ problem.difficulty }}</span
-        >
+        <h3 class="mb-2">{{ problem.title }}</h3>
+        <div class="d-flex align-items-center gap-2 mb-3">
+          <span class="badge-diff diff-{{ problem.difficulty }}"
+            >{{ problem.difficulty }}</span
+          >
+          {% if tags %} {% for tag in tags[:2] %}
+          <span
+            class="badge bg-light text-secondary"
+            style="
+              font-weight: 600;
+              font-size: 12px;
+              padding: 4px 12px;
+              border-radius: 12px;
+            "
+            >{{ tag }}</span
+          >
+          {% endfor %} {% if tags|length > 2 %}
+          <span
+            class="badge bg-light text-secondary"
+            style="
+              font-weight: 600;
+              font-size: 12px;
+              padding: 4px 10px;
+              border-radius: 12px;
+              cursor: pointer;
+            "
+            data-bs-toggle="tooltip"
+            data-bs-placement="top"
+            data-bs-html="true"
+            data-bs-title="{{ tags[2:] | join(', ') }}"
+            >+{{ tags|length - 2 }}</span
+          >
+          {% endif %} {% endif %}
+        </div>
 
         <div
           class="mb-4 markdown-content"
@@ -182,6 +212,10 @@ endblock %} {% block body_class %}mode-immersive overflow-hidden{% endblock %}
           fontSize: 14,
           scrollBeyondLastLine: false
       });
+
+      // Initialize Bootstrap tooltips
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
   });
 
   // Map giữa value của thẻ select và ID ngôn ngữ của Monaco Editor
@@ -228,7 +262,7 @@ endblock %} {% block body_class %}mode-immersive overflow-hidden{% endblock %}
       outputDiv.innerHTML = '<div class="text-center mt-4 text-primary"><div class="spinner-border spinner-border-sm me-2"></div>Running...</div>';
 
       const code = window.editor.getValue();
-      const language = document.getElementById('language-select').value || 'Python';
+      const language = document.getElementById('language-select').value || 'python';
       try {
           const res = await fetch('/api/run', {
               method: 'POST',
@@ -280,7 +314,7 @@ endblock %} {% block body_class %}mode-immersive overflow-hidden{% endblock %}
 
       const code = window.editor.getValue();
       try {
-          const language = document.getElementById('language-select').value || 'Python';
+          const language = document.getElementById('language-select').value || 'python';
           const res = await fetch('/api/submit', {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},

@@ -146,11 +146,40 @@ def run_code_external(code, language, input_data):
                 "status_label": "Compilation Error",
             }
 
-        # 2. Kiểm tra lỗi Runtime
-        if run_stage.get("code", 0) != 0:
+        # 2. Kiểm tra Timeout trước (kiểm tra signal trước code)
+        signal = run_stage.get("signal", None)
+        stderr = run_stage.get("stderr", "")
+
+        # Signal SIGKILL/SIGTERM = Timeout (Piston kills process)
+        if (
+            signal in ["SIGKILL", "SIGTERM", 9, 15]
+            or "Killed" in stderr
+            or "timed out" in stderr.lower()
+        ):
             return {
                 "success": False,
-                "error": run_stage.get("stderr", "Runtime Error"),
+                "error": "Time Limit Exceeded (Code execution timed out)",
+                "status_label": "Time Limit Exceeded",
+                "is_timeout": True,
+            }
+
+        # 3. Kiểm tra lỗi Runtime/Syntax (exit code != 0)
+        # Note: code có thể là None khi timeout, phải check signal trước
+        if run_stage.get("code") not in [None, 0]:
+            # Check if it's a syntax error (Python: SyntaxError, IndentationError)
+            if stderr and any(
+                err in stderr for err in ["SyntaxError", "IndentationError", "TabError"]
+            ):
+                return {
+                    "success": False,
+                    "error": stderr or "Syntax Error",
+                    "status_label": "Compilation Error",  # Treat as compilation error
+                }
+
+            # Real runtime error
+            return {
+                "success": False,
+                "error": stderr or "Runtime Error",
                 "status_label": "Runtime Error",
             }
 

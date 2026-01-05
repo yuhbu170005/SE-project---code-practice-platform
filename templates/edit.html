@@ -151,7 +151,7 @@
     <div class="form-card">
         
         <div class="form-header">
-            <div class="form-title">Edit Problem: {{ problem.problem_id }}</div>
+            <div class="form-title">Edit Problem: {{ problem.title }}</div>
         </div>
 
         <form method="POST" action="{{ url_for('problem.edit', id=problem.problem_id) }}">

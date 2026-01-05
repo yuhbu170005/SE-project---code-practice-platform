@@ -35,3 +35,30 @@ def get_tag_names():
     finally:
         cursor.close()
         conn.close()
+
+
+def get_problem_tags(problem_id):
+    """Get tags for a specific problem"""
+    conn = get_db_connection()
+    if not conn:
+        return []
+
+    try:
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute(
+            """
+            SELECT t.tag_name 
+            FROM tags t
+            JOIN problem_tags pt ON t.tag_id = pt.tag_id
+            WHERE pt.problem_id = %s
+            ORDER BY t.tag_name
+            """,
+            (problem_id,),
+        )
+        return [row["tag_name"] for row in cursor.fetchall()]
+    except Exception as e:
+        print(f"Error fetching problem tags: {e}")
+        return []
+    finally:
+        cursor.close()
+        conn.close()

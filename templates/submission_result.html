@@ -85,8 +85,8 @@ endblock %} {% block content %}
         </small>
         <br />
         <small
-          >{{ submission.memory_used if submission.memory_used else 'N/A'
-          }}MB</small
+          >{% if submission.memory_used %}{{ (submission.memory_used / 1024) |
+          round(2) }}{% else %}N/A{% endif %}MB</small
         >
       </div>
       <div class="col-md-3">

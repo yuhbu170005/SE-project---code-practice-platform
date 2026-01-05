@@ -16,7 +16,7 @@ from backend.services.problem_service import (
     delete_problem,
     get_problem_by_id,
 )
-from backend.services.tag_service import get_all_tags, get_tag_names
+from backend.services.tag_service import get_all_tags, get_tag_names, get_problem_tags
 from backend.services.testcase_service import (
     get_public_test_cases,
     save_test_cases,
@@ -271,8 +271,14 @@ def edit(id):
 @problem_bp.route("/problems/delete/<int:id>", methods=["POST"])
 @admin_required
 def delete(id):
-    delete_problem(id)
-    return redirect(url_for("problem.list_problems"))
+    success = delete_problem(id)
+    if success:
+        return (
+            jsonify({"success": True, "message": "Problem deleted successfully!"}),
+            200,
+        )
+    else:
+        return jsonify({"success": False, "message": "Failed to delete problem."}), 500
 
 
 # ==================== API ROUTES (JSON) ====================
@@ -291,6 +297,9 @@ def problem_detail(slug):
     if not problem:
         return "Problem not found", 404
         # Hoặc dùng: abort(404)
+
+    # Get tags for this problem
+    tags = get_problem_tags(problem["problem_id"])
 
     # Pass starter_code to template (fallback to default if null)
     starter_code = problem.get("starter_code")
@@ -317,4 +326,5 @@ def problem_detail(slug):
         sample_cases=sample_cases,
         test_cases=test_cases,
         starter_code=starter_code,
+        tags=tags,
     )
