@@ -26,6 +26,7 @@ wheels/
 .installed.cfg
 *.egg
 backend/config.py
+config.py
 
 # Database
 *.db
