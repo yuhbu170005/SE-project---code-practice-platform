@@ -31,9 +31,10 @@ def save_submission_to_db(
             INSERT INTO submissions (
                 user_id, problem_id, code, language, status, 
                 test_cases_passed, total_test_cases,
-                execution_time, memory_used, test_case_results
+                execution_time, memory_used, test_case_results,
+                submitted_at
             ) 
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
         """,
             (
                 user_id,

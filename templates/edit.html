@@ -266,7 +266,7 @@
         </form>
     </div>
 </div>
-<div id="test-cases-data" data-test-cases="{{ test_cases | tojson | safe }}" style="display: none;"></div>
+<script type="application/json" id="test-cases-data">{{ test_cases | tojson | safe }}</script>
 {% endblock %} {% block extra_js %}
 <script src="{{ url_for('static', filename='js/edit.js') }}"></script>
 {% endblock %}

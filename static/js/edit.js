@@ -232,13 +232,36 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // Load test cases from data attribute
   const testCasesData = document.getElementById('test-cases-data');
+  console.log('=== TEST CASES DEBUG ===');
+  console.log('testCasesData element:', testCasesData);
+  
   if (testCasesData) {
+    const rawData = testCasesData.textContent;
+    console.log('Raw data from textContent:', rawData);
+    
     try {
-      testCases = JSON.parse(testCasesData.dataset.testCases || '[]');
+      testCases = JSON.parse(rawData || '[]');
+      console.log('Parsed test cases:', testCases);
+      console.log('Test cases length:', testCases.length);
     } catch (e) {
       console.error('Error parsing test cases:', e);
       testCases = [];
     }
+  } else {
+    console.log('test-cases-data element NOT FOUND');
+  }
+  
+  // Load test cases into editor on page load
+  if (jsonEditor) {
+    console.log('JSON editor found');
+    if (testCases.length > 0) {
+      console.log('Loading test cases into editor...');
+      loadTestCasesIntoEditor();
+    } else {
+      console.log('No test cases to load (array is empty)');
+    }
+  } else {
+    console.log('JSON editor NOT FOUND');
   }
   
   if (form && jsonEditor) {

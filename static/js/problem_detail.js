@@ -32,16 +32,39 @@ function initProblemDetail() {
     
     const problemId = parseInt(problemIdEl.dataset.problemId);
     const functionName = problemIdEl.dataset.functionName || 'solve';
+    
+    // DEBUG: Show raw data
+    console.log('=== DEBUG START ===');
+    const jsonScript = document.getElementById('problem-data-json');
+    const rawStarterCode = jsonScript ? jsonScript.textContent : null;
+    console.log('Raw starterCode from script:', rawStarterCode);
+    console.log('Function name:', functionName);
+    
     let starterCodeData = null;
     try {
-        const starterCodeStr = problemIdEl.dataset.starterCode || '';
-        if (starterCodeStr) {
-            starterCodeData = JSON.parse(starterCodeStr);
+        if (rawStarterCode) {
+            const rawData = JSON.parse(rawStarterCode);
+            console.log('Parsed rawData type:', typeof rawData);
+            console.log('Parsed rawData:', rawData);
+            
+            // Normalize keys: convert 'c++', 'C++' to 'cpp', 'Javascript' to 'javascript'
+            if (typeof rawData === 'object' && rawData !== null) {
+                starterCodeData = {};
+                for (const [key, value] of Object.entries(rawData)) {
+                    const normalizedKey = key.toLowerCase().replace(/\+/g, 'p');
+                    console.log(`Normalizing key: "${key}" -> "${normalizedKey}"`);
+                    starterCodeData[normalizedKey] = value;
+                }
+                console.log('Final normalized starterCodeData:', starterCodeData);
+            } else {
+                starterCodeData = rawData;
+            }
         }
     } catch (e) {
         console.error('Error parsing starter code:', e);
         starterCodeData = null;
     }
+    console.log('=== DEBUG END ===');
 
     // Map giữa value của thẻ select và ID ngôn ngữ của Monaco Editor
     const monacoLanguages = {
@@ -62,16 +85,22 @@ function initProblemDetail() {
     // Monaco
     require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.36.1/min/vs' }});
     require(['vs/editor/editor.main'], function() {
+        // Debug log
+        console.log('Starter Code Data:', starterCodeData);
+        console.log('Function Name:', functionName);
+        
         // Check if it's multi-language object or single string
         let initialCode = "";
         if (typeof starterCodeData === 'object' && starterCodeData !== null && Object.keys(starterCodeData).length > 0) {
             // Multi-language: use python as default
             initialCode = starterCodeData['python'] || defaultTemplates['python'];
             window.starterCodes = starterCodeData; // Store for language switching
+            console.log('Using multi-language starter codes');
         } else {
             // Single string or empty
             initialCode = (typeof starterCodeData === 'string' && starterCodeData) ? starterCodeData : defaultTemplates['python'];
             window.starterCodes = null;
+            console.log('Using default templates');
         }
 
         window.editor = monaco.editor.create(document.getElementById('monaco-editor'), {
@@ -99,8 +128,11 @@ function initProblemDetail() {
             let templateCode = "";
             if (window.starterCodes && window.starterCodes[selectedLang]) {
                 templateCode = window.starterCodes[selectedLang];
+                console.log(`Using DB starter code for ${selectedLang}:`, templateCode.substring(0, 50));
             } else {
                 templateCode = defaultTemplates[selectedLang] || "";
+                console.log(`Using default template for ${selectedLang}:`, templateCode.substring(0, 50));
+                console.log('Available starterCodes keys:', window.starterCodes ? Object.keys(window.starterCodes) : 'null');
             }
 
             // CẬP NHẬT EDITOR:
