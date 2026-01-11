@@ -31,6 +31,7 @@ function initProblemDetail() {
     if (!problemIdEl || !outputDiv) return;
     
     const problemId = parseInt(problemIdEl.dataset.problemId);
+    const functionName = problemIdEl.dataset.functionName || 'solve';
     let starterCodeData = null;
     try {
         const starterCodeStr = problemIdEl.dataset.starterCode || '';
@@ -50,12 +51,12 @@ function initProblemDetail() {
         'javascript': 'javascript'
     };
 
-    // Fallback templates nếu không có trong database
+    // Fallback templates nếu không có trong database - sử dụng function name động
     const defaultTemplates = {
-        'python': "class Solution:\n    def solve(self, input_str):\n        # Your code here\n        pass",
-        'java': "class Solution {\n    public void solve(String input) {\n        // Your code here\n    }\n}",
-        'cpp': "class Solution {\npublic:\n    void solve(string input) {\n        // Your code here\n    }\n};",
-        'javascript': "class Solution {\n    solve(input) {\n        // Your code here\n    }\n}"
+        'python': `class Solution:\n    def ${functionName}(self, input_str):\n        # Your code here\n        pass`,
+        'java': `class Solution {\n    public void ${functionName}(String input) {\n        // Your code here\n    }\n}`,
+        'cpp': `class Solution {\npublic:\n    void ${functionName}(string input) {\n        // Your code here\n    }\n};`,
+        'javascript': `class Solution {\n    ${functionName}(input) {\n        // Your code here\n    }\n}`
     };
 
     // Monaco
@@ -65,11 +66,11 @@ function initProblemDetail() {
         let initialCode = "";
         if (typeof starterCodeData === 'object' && starterCodeData !== null && Object.keys(starterCodeData).length > 0) {
             // Multi-language: use python as default
-            initialCode = starterCodeData['python'] || "class Solution:\n    def solve(self, input_str):\n        pass";
+            initialCode = starterCodeData['python'] || defaultTemplates['python'];
             window.starterCodes = starterCodeData; // Store for language switching
         } else {
             // Single string or empty
-            initialCode = (typeof starterCodeData === 'string' && starterCodeData) ? starterCodeData : "class Solution:\n    def solve(self, input_str):\n        pass";
+            initialCode = (typeof starterCodeData === 'string' && starterCodeData) ? starterCodeData : defaultTemplates['python'];
             window.starterCodes = null;
         }
 

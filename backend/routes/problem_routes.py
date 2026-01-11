@@ -316,9 +316,12 @@ def problem_detail(slug):
             # Not JSON, use as-is
             pass
 
+    # Get function name (fallback to 'solve' if not provided)
+    function_name = problem.get("function_name") or "solve"
+
     # Fallback to default Python code if no starter_code
     if not starter_code:
-        starter_code = "class Solution:\n    def solve(self, input_str):\n        # Your code here\n        pass"
+        starter_code = f"class Solution:\n    def {function_name}(self, input_str):\n        # Your code here\n        pass"
 
     return render_template(
         "problem_detail.html",
@@ -326,5 +329,6 @@ def problem_detail(slug):
         sample_cases=sample_cases,
         test_cases=test_cases,
         starter_code=starter_code,
+        function_name=function_name,
         tags=tags,
     )

@@ -158,6 +158,6 @@ endblock %} {% block body_class %}mode-immersive overflow-hidden{% endblock %}
 </div>
 {% endblock %} {% block extra_js %}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.36.1/min/vs/loader.min.js"></script>
-<div id="problem-data" data-problem-id="{{ problem.problem_id }}" data-starter-code="{{ starter_code | tojson | safe }}" style="display: none;"></div>
+<div id="problem-data" data-problem-id="{{ problem.problem_id }}" data-starter-code="{{ starter_code | tojson | safe }}" data-function-name="{{ function_name }}" style="display: none;"></div>
 <script src="{{ url_for('static', filename='js/problem_detail.js') }}"></script>
 {% endblock %}
